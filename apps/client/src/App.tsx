@@ -1,5 +1,13 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, WorkspaceProvider, useAuth } from './context';
+import { 
+  AuthProvider, 
+  WorkspaceProvider, 
+  useAuth,
+  PriorityProvider,
+  ToastProvider,
+  FavoritesProvider,
+  CommentsProvider,
+} from './context';
 import './styles/base.css';
 import './styles/components.css';
 import './styles/layout.css';
@@ -45,6 +53,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// App-level providers for authenticated routes
+function AppProviders({ children }: { children: React.ReactNode }) {
+  return (
+    <WorkspaceProvider>
+      <PriorityProvider>
+        <FavoritesProvider>
+          <CommentsProvider>
+            {children}
+          </CommentsProvider>
+        </FavoritesProvider>
+      </PriorityProvider>
+    </WorkspaceProvider>
+  );
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -59,26 +82,30 @@ function AppRoutes() {
       {/* Protected App Routes */}
       <Route path="/app" element={
         <ProtectedRoute>
-          <WorkspaceProvider>
+          <AppProviders>
             <DashboardPage />
-          </WorkspaceProvider>
+          </AppProviders>
         </ProtectedRoute>
       } />
       <Route path="/app/schemas" element={
         <ProtectedRoute>
-          <SchemasPage />
+          <AppProviders>
+            <SchemasPage />
+          </AppProviders>
         </ProtectedRoute>
       } />
       <Route path="/app/settings" element={
         <ProtectedRoute>
-          <SettingsPage />
+          <AppProviders>
+            <SettingsPage />
+          </AppProviders>
         </ProtectedRoute>
       } />
       <Route path="/app/*" element={
         <ProtectedRoute>
-          <WorkspaceProvider>
+          <AppProviders>
             <DashboardPage />
-          </WorkspaceProvider>
+          </AppProviders>
         </ProtectedRoute>
       } />
       
@@ -91,7 +118,9 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <ToastProvider>
+        <AppRoutes />
+      </ToastProvider>
     </AuthProvider>
   );
 }
