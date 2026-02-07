@@ -1,6 +1,6 @@
 import React from 'react';
 import DOMPurify from 'dompurify';
-import { BrutalistInput } from '../common/BrutalistInput';
+import { CyberInput, CyberTextarea, CyberSelect } from '../ui/cyberInput';
 
 export type AttributeType = 
   | 'STRING' 
@@ -19,14 +19,14 @@ export interface SchemaField {
   displayName: string;
   dataType: AttributeType;
   isRequired?: boolean;
-  defaultValue?: any;
+  defaultValue?: unknown;
   options?: Array<{ value: string; displayName: string }>;
 }
 
 export interface SchemaRendererProps {
   fields: SchemaField[];
-  values: Record<string, any>;
-  onChange: (name: string, value: any) => void;
+  values: Record<string, unknown>;
+  onChange: (name: string, value: unknown) => void;
   errors?: Record<string, string>;
 }
 
@@ -42,8 +42,8 @@ export const SchemaRenderer: React.FC<SchemaRendererProps> = ({
     const commonProps = {
       label: sanitizeLabel(field.displayName),
       name: field.name,
-      value: values[field.name] || '',
-      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => 
+      value: (values[field.name] as string) || '',
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => 
         onChange(field.name, e.target.value),
       error: errors[field.name],
       required: field.isRequired,
@@ -52,63 +52,56 @@ export const SchemaRenderer: React.FC<SchemaRendererProps> = ({
     switch (field.dataType) {
       case 'TEXT':
         return (
-          <div key={field.name} className="brutalist-input-group border-all">
-            <label className="brutalist-label border-bottom text-mono">
-              {sanitizeLabel(field.displayName)}
-            </label>
-            <textarea
-              className="brutalist-input text-sans"
-              rows={4}
-              name={field.name}
-              value={values[field.name] || ''}
-              onChange={(e) => onChange(field.name, e.target.value)}
-              required={field.isRequired}
-            />
-          </div>
+          <CyberTextarea
+            key={field.name}
+            label={sanitizeLabel(field.displayName)}
+            name={field.name}
+            value={(values[field.name] as string) || ''}
+            onChange={(e) => onChange(field.name, e.target.value)}
+            error={errors[field.name]}
+            required={field.isRequired}
+          />
         );
 
       case 'BOOLEAN':
         return (
-          <div key={field.name} className="brutalist-checkbox-group border-all p-md flex items-center">
-             <input
+          <div key={field.name} className="cyber-input-group">
+            <label className="cyber-checkbox-label">
+              <input
                 type="checkbox"
                 id={field.name}
                 checked={!!values[field.name]}
                 onChange={(e) => onChange(field.name, e.target.checked)}
-                className="brutalist-checkbox"
+                className="cyber-checkbox"
               />
-              <label htmlFor={field.name} className="text-mono ml-sm uppercase font-black">
-                {sanitizeLabel(field.displayName)}
-              </label>
+              {sanitizeLabel(field.displayName)}
+            </label>
           </div>
         );
 
       case 'ENUM':
         return (
-          <div key={field.name} className="brutalist-input-group border-all">
-            <label className="brutalist-label border-bottom text-mono">
-              {sanitizeLabel(field.displayName)}
-            </label>
-            <select
-              className="brutalist-input text-mono uppercase"
-              name={field.name}
-              value={values[field.name] || ''}
-              onChange={(e) => onChange(field.name, e.target.value)}
-              required={field.isRequired}
-            >
-              <option value="">SELECT {field.displayName}</option>
-              {field.options?.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.displayName}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CyberSelect
+            key={field.name}
+            label={sanitizeLabel(field.displayName)}
+            name={field.name}
+            value={(values[field.name] as string) || ''}
+            onChange={(e) => onChange(field.name, e.target.value)}
+            error={errors[field.name]}
+            required={field.isRequired}
+          >
+            <option value="">Select {field.displayName}</option>
+            {field.options?.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.displayName}
+              </option>
+            ))}
+          </CyberSelect>
         );
 
       case 'DATE':
         return (
-          <BrutalistInput
+          <CyberInput
             key={field.name}
             {...commonProps}
             type="date"
@@ -119,7 +112,7 @@ export const SchemaRenderer: React.FC<SchemaRendererProps> = ({
       case 'NUMBER':
       case 'DECIMAL':
         return (
-          <BrutalistInput
+          <CyberInput
             key={field.name}
             {...commonProps}
             type="number"
@@ -129,7 +122,7 @@ export const SchemaRenderer: React.FC<SchemaRendererProps> = ({
 
       default:
         return (
-          <BrutalistInput
+          <CyberInput
             key={field.name}
             {...commonProps}
             type="text"
