@@ -35,7 +35,7 @@ import { AttributeModule } from './attribute/attribute.module';
           {
             name: 'auth',
             ttl: 60000, // 1 minute window for auth endpoints
-            limit: 5, // Only 5 attempts per minute (stricter for auth)
+            limit: 20, // 20 attempts per minute (relaxed for development)
           },
         ],
       }),

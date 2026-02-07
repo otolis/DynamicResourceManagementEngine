@@ -44,7 +44,7 @@ export class AttributeRepository extends TenantAwareRepository {
         await this.validateEntityTypeOwnership(data.entityTypeId);
 
         try {
-            if (data.dataType === DataType.ENUM && data.options) {
+            if (data.dataType === DataType.ENUM && data.options && data.options.length > 0) {
                 // Transaction: Create attribute + options atomically
                 return await this.prisma.$transaction(async (tx) => {
                     const attribute = await tx.attribute.create({
@@ -67,7 +67,7 @@ export class AttributeRepository extends TenantAwareRepository {
 
                     // Create options
                     await tx.attributeOption.createMany({
-                        data: data.options.map((opt, index) => ({
+                        data: data.options!.map((opt, index) => ({
                             attributeId: attribute.id,
                             value: opt.value,
                             displayName: opt.displayName,
@@ -77,10 +77,11 @@ export class AttributeRepository extends TenantAwareRepository {
                     });
 
                     // Return with options included
-                    return await tx.attribute.findUnique({
+                    const result = await tx.attribute.findUnique({
                         where: { id: attribute.id },
                         include: { options: true },
                     });
+                    return result!;
                 });
             } else {
                 // Simple create without options
