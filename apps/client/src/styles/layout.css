@@ -177,3 +177,39 @@
     display: none;
   }
 }
+
+/* === Sidebar Divider === */
+.fluid-sidebar__divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: var(--spacing-md) 0;
+}
+
+/* === Header User Section === */
+.fluid-header__user {
+  display: flex;
+  align-items: center;
+  margin-right: var(--spacing-md);
+}
+
+/* === Light Mode Adjustments === */
+body.light-mode .mesh-background {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+body.light-mode .mesh-orb {
+  opacity: 0.15;
+}
+
+body.light-mode .mesh-orb--1 {
+  background: #818cf8;
+}
+
+body.light-mode .mesh-orb--2 {
+  background: #a78bfa;
+}
+
+body.light-mode .mesh-orb--3 {
+  background: #22d3ee;
+}
+
