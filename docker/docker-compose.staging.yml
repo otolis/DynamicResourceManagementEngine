@@ -1,0 +1,51 @@
+# Docker Compose - Staging Environment
+# Usage: docker-compose -f docker/docker-compose.staging.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: drme-postgres-staging
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-drmeStaging}
+    volumes:
+      - drme-pgdata-staging:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME:-drmeStaging}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - drme-network
+
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    container_name: drme-api-staging
+    restart: unless-stopped
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-drmeStaging}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      API_PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - drme-network
+
+networks:
+  drme-network:
+    driver: bridge
+
+volumes:
+  drme-pgdata-staging:
+    driver: local
