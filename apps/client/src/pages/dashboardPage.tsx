@@ -1,14 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Folder, Plus, FolderOpen, AlertCircle, Loader, Star, MessageSquare } from 'lucide-react';
+import { 
+  Folder, Plus, FolderOpen, AlertCircle, Loader, Star, MessageSquare, 
+  Pin, Clock, Zap 
+} from 'lucide-react';
 import { FluidShell } from '../components/layout/fluidShell';
 import { ProjectTabs, ProjectPanel, CommentsPanel } from '../components/workspace';
 import { CyberButton } from '../components/ui/cyberButton';
 import { CreateEntityModal } from '../components/ui/modal';
 import { PriorityBadge, PriorityPicker } from '../components/ui/PriorityPicker';
 import { CommandPalette, useCommandPaletteCommands } from '../components/ui/CommandPalette';
+import { QuickActionsMenu, useProjectQuickActions } from '../components/ui/QuickActionsMenu';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { useWorkspace, useFavorites, useComments, useToast } from '../context';
+import { 
+  useWorkspace, useFavorites, useComments, useToast, usePins, useRecent, useActivity 
+} from '../context';
 import { entityTypesApi, type EntityType } from '../api';
 import '../styles/workspace.css';
 
@@ -16,6 +22,9 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const { tabs, activeTabId, openTab, getActiveTab, setActiveTab } = useWorkspace();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { isPinned, togglePin } = usePins();
+  const { addRecent } = useRecent();
+  const { addActivity } = useActivity();
   const { getCommentCount } = useComments();
   const toast = useToast();
   const [projects, setProjects] = useState<EntityType[]>([]);
@@ -58,6 +67,13 @@ export function DashboardPage() {
       type: 'project',
       data: project,
     });
+    addRecent(project.id, project.displayName);
+    addActivity({
+      type: 'open',
+      entityType: 'project',
+      entityId: project.id,
+      entityName: project.displayName,
+    });
   };
 
   const handleOpenProjectById = useCallback((projectId: string) => {
@@ -83,6 +99,13 @@ export function DashboardPage() {
         data: newProject,
       });
 
+      addActivity({
+        type: 'create',
+        entityType: 'project',
+        entityId: newProject.id,
+        entityName: newProject.displayName,
+      });
+
       toast.success('Project Created', `"${newProject.displayName}" has been created successfully.`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create project';
@@ -104,12 +127,45 @@ export function DashboardPage() {
         isActive: data.isActive as boolean,
       });
       await fetchProjects();
+      
+      addActivity({
+        type: 'update',
+        entityType: 'project',
+        entityId: activeTab.data.id,
+        entityName: data.displayName as string,
+      });
+
       toast.success('Saved', 'Project changes saved successfully.');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save project';
       toast.error('Save Failed', message);
     }
   };
+
+  // Sort projects: pinned first, then favorites, then by name
+  const sortedProjects = useMemo(() => {
+    return [...projects].sort((a, b) => {
+      const aPinned = isPinned(a.id);
+      const bPinned = isPinned(b.id);
+      const aFav = isFavorite(a.id);
+      const bFav = isFavorite(b.id);
+      
+      // Pinned first
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      
+      // Then favorites
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      
+      // Then alphabetical
+      return a.displayName.localeCompare(b.displayName);
+    });
+  }, [projects, isPinned, isFavorite]);
+
+  // Separate pinned projects
+  const pinnedProjects = sortedProjects.filter((p) => isPinned(p.id));
+  const regularProjects = sortedProjects.filter((p) => !isPinned(p.id));
 
   // Command palette commands
   const commands = useCommandPaletteCommands(
@@ -121,152 +177,149 @@ export function DashboardPage() {
 
   // Keyboard shortcuts
   useKeyboardShortcuts([
-    {
-      key: 'k',
-      ctrl: true,
-      handler: () => setIsCommandPaletteOpen(true),
-      description: 'Open command palette',
-    },
-    {
-      key: 'n',
-      ctrl: true,
-      handler: () => setIsCreateModalOpen(true),
-      description: 'Create new project',
-    },
-    {
-      key: 'Escape',
-      handler: () => {
-        setIsCommandPaletteOpen(false);
-        setIsCreateModalOpen(false);
-      },
-      description: 'Close modal',
-    },
-    // Tab switching with Alt+1-5
+    { key: 'k', ctrl: true, handler: () => setIsCommandPaletteOpen(true), description: 'Open command palette' },
+    { key: 'n', ctrl: true, handler: () => setIsCreateModalOpen(true), description: 'Create new project' },
+    { key: 'Escape', handler: () => { setIsCommandPaletteOpen(false); setIsCreateModalOpen(false); }, description: 'Close modal' },
     ...Array.from({ length: 5 }, (_, i) => ({
       key: String(i + 1),
       alt: true,
-      handler: () => {
-        const tab = tabs[i];
-        if (tab) setActiveTab(tab.id);
-      },
+      handler: () => { const tab = tabs[i]; if (tab) setActiveTab(tab.id); },
       description: `Switch to tab ${i + 1}`,
     })),
   ]);
 
   const activeTab = getActiveTab();
 
-  // Sort projects: favorites first, then by name
-  const sortedProjects = [...projects].sort((a, b) => {
-    const aFav = isFavorite(a.id);
-    const bFav = isFavorite(b.id);
-    if (aFav && !bFav) return -1;
-    if (!aFav && bFav) return 1;
-    return a.displayName.localeCompare(b.displayName);
-  });
+  // Project item renderer
+  const renderProjectItem = (project: EntityType, showPinBadge = false) => {
+    const isActive = activeTabId === `project-${project.id}`;
+    const isFav = isFavorite(project.id);
+    const isPinnedProject = isPinned(project.id);
+    const commentCount = getCommentCount(project.id);
+    
+    const quickActions = useProjectQuickActions(project.id, {
+      onPin: () => {
+        togglePin(project.id);
+        toast.info(isPinnedProject ? 'Unpinned' : 'Pinned', `${project.displayName} ${isPinnedProject ? 'removed from' : 'added to'} pins`);
+      },
+      onStar: () => {
+        toggleFavorite(project.id);
+      },
+      isPinned: isPinnedProject,
+      isStarred: isFav,
+    });
+    
+    return (
+      <div
+        key={project.id}
+        className={`projects-sidebar__item ${isActive ? 'projects-sidebar__item--active' : ''} ${isPinnedProject ? 'projects-sidebar__item--pinned' : ''}`}
+        onClick={() => handleProjectClick(project)}
+      >
+        {/* Star button */}
+        <button
+          className={`projects-sidebar__star-btn ${isFav ? 'projects-sidebar__star-btn--active' : ''}`}
+          onClick={(e) => { e.stopPropagation(); toggleFavorite(project.id); }}
+        >
+          <Star size={14} fill={isFav ? '#eab308' : 'none'} />
+        </button>
+        
+        {/* Folder icon */}
+        <span className="projects-sidebar__item-icon">
+          {isActive ? <FolderOpen size={18} /> : <Folder size={18} />}
+        </span>
+        
+        {/* Project content */}
+        <div className="projects-sidebar__item-content">
+          <span className="projects-sidebar__item-name">{project.displayName}</span>
+          <span className="projects-sidebar__item-meta">
+            {project.tableName}
+            {commentCount > 0 && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <MessageSquare size={10} />
+                {commentCount}
+              </span>
+            )}
+          </span>
+        </div>
+        
+        {/* Badges */}
+        <div className="projects-sidebar__item-badges">
+          {showPinBadge && isPinnedProject && (
+            <Pin size={12} style={{ color: 'var(--color-accent)', transform: 'rotate(45deg)' }} />
+          )}
+          <PriorityBadge projectId={project.id} />
+        </div>
+        
+        {/* Quick actions menu */}
+        <QuickActionsMenu actions={quickActions} />
+      </div>
+    );
+  };
 
   // Sidebar content
   const sidebarContent = (
     <div className="projects-sidebar">
-      <div className="projects-sidebar__title">Saved Projects</div>
-      
-      {isLoading && (
-        <div className="projects-sidebar__loading">
-          <Loader size={20} className="animate-spin" />
-          <span style={{ marginLeft: 'var(--spacing-sm)' }}>Loading...</span>
-        </div>
-      )}
-      
-      {error && !isLoading && (
-        <div className="projects-sidebar__error">
-          <AlertCircle size={16} style={{ marginRight: 'var(--spacing-xs)' }} />
-          {error}
-        </div>
-      )}
-      
-      {!isLoading && sortedProjects.map((project) => {
-        const isActive = activeTabId === `project-${project.id}`;
-        const isFav = isFavorite(project.id);
-        const commentCount = getCommentCount(project.id);
-        
-        return (
-          <div
-            key={project.id}
-            className={`projects-sidebar__item ${isActive ? 'projects-sidebar__item--active' : ''}`}
-            onClick={() => handleProjectClick(project)}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFavorite(project.id);
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: isFav ? '#eab308' : 'var(--color-text-muted)',
-                cursor: 'pointer',
-                padding: 2,
-                display: 'flex',
-                opacity: isFav ? 1 : 0.4,
-                transition: 'opacity 0.2s, color 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-              onMouseLeave={(e) => { if (!isFav) e.currentTarget.style.opacity = '0.4'; }}
-            >
-              <Star size={14} fill={isFav ? '#eab308' : 'none'} />
-            </button>
-            
-            <span className="projects-sidebar__item-icon">
-              {isActive ? <FolderOpen size={18} /> : <Folder size={18} />}
-            </span>
-            
-            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {project.displayName}
-            </span>
-            
-            <PriorityBadge projectId={project.id} />
-            
-            {commentCount > 0 && (
-              <span style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 2, 
-                fontSize: '0.75rem', 
-                color: 'var(--color-text-muted)' 
-              }}>
-                <MessageSquare size={12} />
-                {commentCount}
-              </span>
-            )}
+      {/* Pinned Section */}
+      {pinnedProjects.length > 0 && (
+        <div className="projects-sidebar__section">
+          <div className="projects-sidebar__title">
+            <Pin size={12} style={{ transform: 'rotate(45deg)' }} />
+            Pinned
           </div>
-        );
-      })}
+          {pinnedProjects.map((p) => renderProjectItem(p, true))}
+        </div>
+      )}
       
+      {pinnedProjects.length > 0 && <div className="projects-sidebar__divider" />}
+      
+      {/* All Projects Section */}
+      <div className="projects-sidebar__section">
+        <div className="projects-sidebar__title">
+          <Folder size={12} />
+          Projects
+        </div>
+        
+        {isLoading && (
+          <div className="projects-sidebar__loading">
+            <Loader size={20} className="animate-spin" />
+            <span>Loading...</span>
+          </div>
+        )}
+        
+        {error && !isLoading && (
+          <div className="projects-sidebar__error">
+            <AlertCircle size={16} />
+            {error}
+          </div>
+        )}
+        
+        {!isLoading && regularProjects.map((p) => renderProjectItem(p))}
+      </div>
+      
+      {/* New Project Button */}
       <CyberButton 
         variant="ghost" 
         size="sm" 
-        style={{ marginTop: 'var(--spacing-md)' }}
+        className="projects-sidebar__new-btn"
         onClick={() => setIsCreateModalOpen(true)}
       >
         <Plus size={16} style={{ marginRight: 'var(--spacing-xs)' }} />
         New Project
       </CyberButton>
 
-      {/* Keyboard shortcut hint */}
-      <div style={{ 
-        marginTop: 'var(--spacing-lg)', 
-        padding: 'var(--spacing-sm)',
-        background: 'var(--glass-bg)',
-        borderRadius: 'var(--radius-md)',
-        fontSize: '0.75rem',
-        color: 'var(--color-text-muted)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+      {/* Keyboard Hints */}
+      <div className="projects-sidebar__hints">
+        <div className="projects-sidebar__hint-row">
           <span>Search</span>
-          <span style={{ fontFamily: 'var(--font-mono)' }}>Ctrl+K</span>
+          <span className="projects-sidebar__hint-key">Ctrl+K</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div className="projects-sidebar__hint-row">
           <span>New</span>
-          <span style={{ fontFamily: 'var(--font-mono)' }}>Ctrl+N</span>
+          <span className="projects-sidebar__hint-key">Ctrl+N</span>
+        </div>
+        <div className="projects-sidebar__hint-row">
+          <span>Switch</span>
+          <span className="projects-sidebar__hint-key">Alt+1-5</span>
         </div>
       </div>
     </div>
@@ -280,6 +333,7 @@ export function DashboardPage() {
         <div style={{ flex: 1, overflow: 'auto' }}>
           {activeTab && activeTab.data ? (
             <div style={{ padding: 'var(--spacing-lg)' }}>
+              {/* Section Tabs */}
               <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
                 <button
                   onClick={() => setActiveSection('form')}
@@ -327,61 +381,68 @@ export function DashboardPage() {
                   )}
                 </button>
 
-                <div style={{ marginLeft: 'auto' }}>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--spacing-sm)' }}>
+                  {/* Pin toggle */}
+                  {activeTab.data && (
+                    <button
+                      onClick={() => {
+                        togglePin(activeTab.data!.id);
+                        toast.info(isPinned(activeTab.data!.id) ? 'Unpinned' : 'Pinned to top', activeTab.data!.displayName);
+                      }}
+                      style={{
+                        padding: 'var(--spacing-sm)',
+                        background: isPinned(activeTab.data.id) ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                        border: `1px solid ${isPinned(activeTab.data.id) ? 'var(--color-accent)' : 'var(--glass-border)'}`,
+                        borderRadius: 'var(--radius-md)',
+                        color: isPinned(activeTab.data.id) ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      title={isPinned(activeTab.data.id) ? 'Unpin' : 'Pin to top'}
+                    >
+                      <Pin size={16} style={{ transform: 'rotate(45deg)' }} />
+                    </button>
+                  )}
+                  
                   <PriorityPicker projectId={activeTab.data.id} />
                 </div>
               </div>
 
               {activeSection === 'form' ? (
-                <ProjectPanel
-                  project={activeTab.data}
-                  onSave={handleSaveProject}
-                />
+                <ProjectPanel project={activeTab.data} onSave={handleSaveProject} />
               ) : (
                 <CommentsPanel projectId={activeTab.data.id} />
               )}
             </div>
           ) : (
             <div className="workspace-empty">
-              <div className="workspace-empty__icon">📂</div>
-              <h3 className="workspace-empty__title">No Project Open</h3>
+              <div className="workspace-empty__icon">
+                <Zap size={64} style={{ color: 'var(--color-accent)' }} />
+              </div>
+              <h3 className="workspace-empty__title">Ready to Build</h3>
               <p className="workspace-empty__text">
-                Select a project from the sidebar to open it, or press <kbd style={{ 
-                  padding: '2px 6px', 
-                  background: 'var(--glass-bg)', 
-                  borderRadius: 4,
-                  fontFamily: 'var(--font-mono)',
-                }}>Ctrl+K</kbd> to search.
+                Select a project from the sidebar, or press{' '}
+                <kbd style={{ padding: '2px 6px', background: 'var(--glass-bg)', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>Ctrl+K</kbd>{' '}
+                to search everything.
               </p>
-              <CyberButton 
-                variant="primary" 
-                style={{ marginTop: 'var(--spacing-lg)' }}
-                onClick={() => setIsCreateModalOpen(true)}
-              >
-                <Plus size={18} style={{ marginRight: 'var(--spacing-xs)' }} />
-                Create New Project
-              </CyberButton>
+              <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)' }}>
+                <CyberButton variant="primary" onClick={() => setIsCreateModalOpen(true)}>
+                  <Plus size={18} style={{ marginRight: 'var(--spacing-xs)' }} />
+                  Create Project
+                </CyberButton>
+                <CyberButton variant="ghost" onClick={() => setIsCommandPaletteOpen(true)}>
+                  <Clock size={18} style={{ marginRight: 'var(--spacing-xs)' }} />
+                  Quick Search
+                </CyberButton>
+              </div>
             </div>
           )}
         </div>
       </FluidShell>
 
-      {/* Command Palette */}
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        commands={commands}
-      />
-
-      {/* Create Project Modal */}
-      <CreateEntityModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateProject}
-        title="Create New Project"
-        submitLabel="Create Project"
-        isLoading={isCreating}
-      />
+      <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} commands={commands} />
+      <CreateEntityModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSubmit={handleCreateProject} title="Create New Project" submitLabel="Create Project" isLoading={isCreating} />
     </>
   );
 }
