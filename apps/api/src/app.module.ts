@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { SecurityModule } from './security/security.module';
 import { RbacGuard } from './security/guards/rbac.guard';
+import { EntityTypeModule } from './entity-type/entity-type.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { RbacGuard } from './security/guards/rbac.guard';
     TenantModule,
     AuthModule,
     SecurityModule,
+    EntityTypeModule,
   ],
   controllers: [AppController],
   providers: [
