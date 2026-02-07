@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Moon, Sun, Shield, Building2 } from 'lucide-react';
 import { FluidShell } from '../components/layout/fluidShell';
 import { CyberButton } from '../components/ui/cyberButton';
@@ -8,16 +8,28 @@ import { apiClient } from '../api';
 
 export function SettingsPage() {
   const { user } = useAuth();
-  const [theme, setTheme] = useState<'dark' | 'light'>(
-    localStorage.getItem('theme') as 'dark' | 'light' || 'dark'
-  );
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    // Initialize from localStorage or default to dark
+    const saved = localStorage.getItem('theme') as 'dark' | 'light' | null;
+    return saved || 'dark';
+  });
   const tenantId = apiClient.getTenantId();
+
+  // Apply theme class on mount and changes
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+      document.body.classList.remove('dark-mode');
+    } else {
+      document.body.classList.add('dark-mode');
+      document.body.classList.remove('light-mode');
+    }
+  }, [theme]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-    // In a real app, you'd apply the theme here
   };
 
   return (
