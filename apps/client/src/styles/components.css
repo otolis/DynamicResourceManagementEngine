@@ -1,0 +1,90 @@
+@import './variables.css';
+
+/* Brutalist Button */
+.brutalist-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-weight: 900;
+  text-transform: uppercase;
+  border: var(--border-thick);
+  cursor: pointer;
+  transition: none;
+  line-height: 1;
+}
+
+.brutalist-button--sm { padding: var(--spacing-xs) var(--spacing-sm); font-size: 0.875rem; }
+.brutalist-button--md { padding: var(--spacing-sm) var(--spacing-md); font-size: 1rem; }
+.brutalist-button--lg { padding: var(--spacing-md) var(--spacing-lg); font-size: 1.5rem; }
+
+.brutalist-button--primary {
+  background-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+.brutalist-button--primary:hover {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.brutalist-button--accent {
+  background-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.brutalist-button--accent:hover {
+  background-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+.brutalist-button--outline {
+  background-color: transparent;
+  color: var(--color-text);
+}
+
+.brutalist-button--outline:hover {
+  background-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+/* Brutalist Input Group */
+.brutalist-input-group {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg);
+}
+
+.brutalist-label {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-color: #f0f0f0;
+}
+
+.brutalist-input {
+  width: 100%;
+  padding: var(--spacing-sm);
+  font-family: inherit;
+  font-size: 1.25rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.brutalist-input:focus {
+  outline: none;
+  background-color: #f8f8f8;
+}
+
+.brutalist-input--error {
+  color: #ff0000;
+}
+
+.brutalist-error {
+  padding: 4px var(--spacing-sm);
+  font-size: 0.75rem;
+  color: #ff0000;
+  background-color: #fff0f0;
+}
