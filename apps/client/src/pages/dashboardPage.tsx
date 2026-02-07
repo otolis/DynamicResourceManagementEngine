@@ -1,82 +1,135 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Folder, Plus, FolderOpen, AlertCircle, Loader } from 'lucide-react';
 import { FluidShell } from '../components/layout/fluidShell';
-import { SchemaRenderer } from '../components/renderer/SchemaRenderer';
-import type { SchemaField } from '../components/renderer/SchemaRenderer';
+import { ProjectTabs, ProjectPanel } from '../components/workspace';
 import { CyberButton } from '../components/ui/cyberButton';
-import { AnimatedCard } from '../components/ui/animatedCard';
-
-const DEMO_SCHEMA: SchemaField[] = [
-  { name: 'projectName', displayName: 'Project Name', dataType: 'STRING', isRequired: true },
-  { name: 'description', displayName: 'Description', dataType: 'TEXT' },
-  { name: 'budget', displayName: 'Initial Budget', dataType: 'DECIMAL' },
-  { name: 'status', displayName: 'Project Status', dataType: 'ENUM', options: [
-    { value: 'DRAFT', displayName: 'Draft Mode' },
-    { value: 'ACTIVE', displayName: 'Active Pipeline' },
-    { value: 'COMPLETED', displayName: 'Archived / Complete' },
-  ]},
-  { name: 'deadline', displayName: 'Release Date', dataType: 'DATE' },
-  { name: 'isPriority', displayName: 'High Priority Flag', dataType: 'BOOLEAN' },
-];
+import { useWorkspace } from '../context';
+import { entityTypesApi, type EntityType } from '../api';
+import '../styles/workspace.css';
 
 export function DashboardPage() {
-  const [formData, setFormData] = useState<Record<string, unknown>>({
-    projectName: 'Cyber-Fluid Demo',
-    status: 'ACTIVE',
-    isPriority: true,
-  });
+  const { activeTabId, openTab, getActiveTab } = useWorkspace();
+  const [projects, setProjects] = useState<EntityType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFieldChange = (name: string, value: unknown) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Fetch projects from backend
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await entityTypesApi.getAll({ limit: 50 });
+        setProjects(response.data);
+      } catch (err) {
+        const message = err instanceof Error ? err.message :
+          (err as { message?: string })?.message || 'Failed to load projects';
+        setError(message);
+        // Use demo projects on error
+        setProjects([
+          { id: 'demo-1', tenantId: 'default', name: 'project', displayName: 'Project', description: 'Manage projects', tableName: 'projects', isActive: true, createdAt: '', updatedAt: '' },
+          { id: 'demo-2', tenantId: 'default', name: 'task', displayName: 'Task', description: 'Track tasks', tableName: 'tasks', isActive: true, createdAt: '', updatedAt: '' },
+          { id: 'demo-3', tenantId: 'default', name: 'user', displayName: 'User', description: 'User management', tableName: 'users', isActive: true, createdAt: '', updatedAt: '' },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  const handleProjectClick = (project: EntityType) => {
+    openTab({
+      id: `project-${project.id}`,
+      title: project.displayName,
+      type: 'project',
+      data: project,
+    });
   };
 
-  const handleSave = () => {
-    console.log('Saving Data:', formData);
-    alert('Data saved! Check console for details.');
+  const handleSaveProject = async (data: Record<string, unknown>) => {
+    const activeTab = getActiveTab();
+    if (!activeTab?.data) return;
+
+    try {
+      await entityTypesApi.update(activeTab.data.id, {
+        displayName: data.displayName as string,
+        description: data.description as string,
+        isActive: data.isActive as boolean,
+      });
+      // Refresh projects list
+      const response = await entityTypesApi.getAll({ limit: 50 });
+      setProjects(response.data);
+    } catch (err) {
+      console.error('Failed to save project:', err);
+    }
   };
+
+  const activeTab = getActiveTab();
+
+  // Sidebar content
+  const sidebarContent = (
+    <div className="projects-sidebar">
+      <div className="projects-sidebar__title">Saved Projects</div>
+      
+      {isLoading && (
+        <div className="projects-sidebar__loading">
+          <Loader size={20} className="animate-spin" />
+          <span style={{ marginLeft: 'var(--spacing-sm)' }}>Loading...</span>
+        </div>
+      )}
+      
+      {error && !isLoading && (
+        <div className="projects-sidebar__error">
+          <AlertCircle size={16} style={{ marginRight: 'var(--spacing-xs)' }} />
+          {error}
+        </div>
+      )}
+      
+      {!isLoading && projects.map((project) => (
+        <div
+          key={project.id}
+          className={`projects-sidebar__item ${
+            activeTabId === `project-${project.id}` ? 'projects-sidebar__item--active' : ''
+          }`}
+          onClick={() => handleProjectClick(project)}
+        >
+          <span className="projects-sidebar__item-icon">
+            {activeTabId === `project-${project.id}` ? <FolderOpen size={18} /> : <Folder size={18} />}
+          </span>
+          {project.displayName}
+        </div>
+      ))}
+      
+      <CyberButton variant="ghost" size="sm" style={{ marginTop: 'var(--spacing-md)' }}>
+        <Plus size={16} style={{ marginRight: 'var(--spacing-xs)' }} />
+        New Project
+      </CyberButton>
+    </div>
+  );
 
   return (
-    <FluidShell>
-      <div className="flex flex-col gap-xl">
-        <AnimatedCard delay={0}>
-          <h2 style={{ marginBottom: 'var(--spacing-md)', color: 'var(--color-text-bright)' }}>
-            Schema Renderer Demo
-          </h2>
-          <p style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--spacing-lg)' }}>
-            This form is dynamically generated from a JSON schema definition.
-          </p>
-          <SchemaRenderer
-            fields={DEMO_SCHEMA}
-            values={formData}
-            onChange={handleFieldChange}
+    <FluidShell sidebarContent={sidebarContent}>
+      {/* Tab Bar */}
+      <ProjectTabs />
+      
+      {/* Tab Content */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {activeTab && activeTab.data ? (
+          <ProjectPanel
+            project={activeTab.data}
+            onSave={handleSaveProject}
           />
-          <div className="flex gap-md justify-end" style={{ marginTop: 'var(--spacing-lg)' }}>
-            <CyberButton variant="ghost" onClick={() => setFormData({})}>
-              Reset
-            </CyberButton>
-            <CyberButton variant="primary" onClick={handleSave}>
-              Save Project
-            </CyberButton>
+        ) : (
+          <div className="workspace-empty">
+            <div className="workspace-empty__icon">📂</div>
+            <h3 className="workspace-empty__title">No Project Open</h3>
+            <p className="workspace-empty__text">
+              Select a project from the sidebar to open it in a new tab, or create a new project to get started.
+            </p>
           </div>
-        </AnimatedCard>
-
-        <AnimatedCard delay={200}>
-          <h3 style={{ marginBottom: 'var(--spacing-md)', color: 'var(--color-text-bright)' }}>
-            Current State
-          </h3>
-          <pre 
-            className="text-mono" 
-            style={{ 
-              padding: 'var(--spacing-md)', 
-              background: 'var(--glass-bg-active)', 
-              borderRadius: 'var(--radius-md)',
-              overflow: 'auto',
-              fontSize: '0.875rem',
-              color: 'var(--color-text-muted)'
-            }}
-          >
-            {JSON.stringify(formData, null, 2)}
-          </pre>
-        </AnimatedCard>
+        )}
       </div>
     </FluidShell>
   );

@@ -1,16 +1,20 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileJson, Settings, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, FileJson, Settings, Menu, X, LogOut } from 'lucide-react';
 import anime from 'animejs';
 import { useState } from 'react';
+import { useAuth } from '../../context';
 import '../../styles/layout.css';
 
 interface FluidShellProps {
   children: ReactNode;
+  sidebarContent?: ReactNode;
 }
 
-export function FluidShell({ children }: FluidShellProps) {
+export function FluidShell({ children, sidebarContent }: FluidShellProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const orb1Ref = useRef<HTMLDivElement>(null);
   const orb2Ref = useRef<HTMLDivElement>(null);
@@ -52,6 +56,11 @@ export function FluidShell({ children }: FluidShellProps) {
     };
   }, []);
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   const navLinks = [
     { to: '/app', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/app/schemas', icon: FileJson, label: 'Schemas' },
@@ -72,6 +81,20 @@ export function FluidShell({ children }: FluidShellProps) {
         <div className="fluid-header__logo">
           <span className="fluid-header__logo-icon">◈</span>
           DRME
+        </div>
+        <div className="fluid-header__user">
+          {user && (
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginRight: 'var(--spacing-md)' }}>
+              {user.email}
+            </span>
+          )}
+          <button
+            className="cyber-button cyber-button--ghost cyber-button--sm"
+            onClick={handleLogout}
+            aria-label="Logout"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
         <div className="fluid-header__actions">
           <button
@@ -104,6 +127,14 @@ export function FluidShell({ children }: FluidShellProps) {
             );
           })}
         </div>
+        
+        {/* Custom Sidebar Content */}
+        {sidebarContent && (
+          <>
+            <div className="fluid-sidebar__divider" />
+            {sidebarContent}
+          </>
+        )}
       </nav>
 
       {/* Main Content */}
@@ -111,3 +142,4 @@ export function FluidShell({ children }: FluidShellProps) {
     </div>
   );
 }
+
