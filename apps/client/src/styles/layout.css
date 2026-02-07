@@ -96,7 +96,7 @@
   top: 64px;
   left: 0;
   bottom: 0;
-  width: 280px;
+  width: 320px;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -145,7 +145,7 @@
 /* === Main Content Area === */
 .fluid-content {
   flex: 1;
-  margin-left: 280px;
+  margin-left: 320px;
   margin-top: 64px;
   padding: var(--spacing-xl);
   min-height: calc(100vh - 64px);

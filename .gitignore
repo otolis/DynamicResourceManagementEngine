@@ -41,4 +41,16 @@ tmp/
 temp/
 *.tmp
 
+# Claude Code
+.claude/
+
+# Vite cache
+.vite/
+
+# Build artifacts
+dist-seed/
+
+# Windows artifacts
+nul
+
 CLAUDE.MD
