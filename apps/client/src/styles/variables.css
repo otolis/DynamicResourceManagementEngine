@@ -1,0 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap");
+
+:root {
+  /* Colors */
+  --color-bg: #ffffff;
+  --color-text: #000000;
+  --color-accent: #2e5bff; /* Electric Blue */
+  --color-accent-text: #ffffff;
+  --color-border: #000000;
+
+  /* Typography */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Layout */
+  --grid-unit: 8px;
+  --border-width: 1px;
+  --border-style: solid;
+  --border-thick: var(--border-width) var(--border-style) var(--color-border);
+
+  /* Spacing */
+  --spacing-xs: calc(var(--grid-unit) * 1);
+  --spacing-sm: calc(var(--grid-unit) * 2);
+  --spacing-md: calc(var(--grid-unit) * 4);
+  --spacing-lg: calc(var(--grid-unit) * 6);
+  --spacing-xl: calc(var(--grid-unit) * 10);
+}
