@@ -1,6 +1,6 @@
 // ProjectPanel - Content panel for an open project tab
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SchemaRenderer } from '../renderer/SchemaRenderer';
 import type { SchemaField } from '../renderer/SchemaRenderer';
 import { CyberButton } from '../ui/cyberButton';
@@ -32,6 +32,18 @@ export function ProjectPanel({ project, onSave }: ProjectPanelProps) {
     isActive: project.isActive,
   });
   const [isDirty, setIsDirty] = useState(false);
+
+  // Sync form data when project changes (tab switch)
+  useEffect(() => {
+    setFormData({
+      name: project.name,
+      displayName: project.displayName,
+      description: project.description || '',
+      tableName: project.tableName,
+      isActive: project.isActive,
+    });
+    setIsDirty(false);
+  }, [project.id]); // Reset when project ID changes
 
   const handleFieldChange = (name: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
