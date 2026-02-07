@@ -12,6 +12,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { SecurityModule } from './security/security.module';
 import { RbacGuard } from './security/guards/rbac.guard';
 import { EntityTypeModule } from './entity-type/entity-type.module';
+import { AttributeModule } from './attribute/attribute.module';
 
 @Module({
   imports: [
