@@ -7,6 +7,9 @@ import {
   ToastProvider,
   FavoritesProvider,
   CommentsProvider,
+  PinsProvider,
+  RecentProvider,
+  ActivityProvider,
 } from './context';
 import './styles/base.css';
 import './styles/components.css';
@@ -59,9 +62,15 @@ function AppProviders({ children }: { children: React.ReactNode }) {
     <WorkspaceProvider>
       <PriorityProvider>
         <FavoritesProvider>
-          <CommentsProvider>
-            {children}
-          </CommentsProvider>
+          <PinsProvider>
+            <RecentProvider>
+              <ActivityProvider>
+                <CommentsProvider>
+                  {children}
+                </CommentsProvider>
+              </ActivityProvider>
+            </RecentProvider>
+          </PinsProvider>
         </FavoritesProvider>
       </PriorityProvider>
     </WorkspaceProvider>
