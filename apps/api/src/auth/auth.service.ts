@@ -4,6 +4,7 @@ import {
     ConflictException,
     BadRequestException,
     Logger,
+    NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -246,6 +247,10 @@ export class AuthService {
             throw new UnauthorizedException('Please verify your email address before logging in.');
         }
 
+        if (!user.passwordHash) {
+            throw new UnauthorizedException('Please sign in using your social provider or reset your password to set a local password.');
+        }
+
         const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
         
         if (!isPasswordValid) {
@@ -278,13 +283,155 @@ export class AuthService {
             },
         });
 
+        return this.mapToUserResponse(user);
+    }
+
+    /**
+     * Validate OAuth user and return internal user representation.
+     * Links account if already exists by email, or creates new one.
+     */
+    async validateOAuthUser(profile: {
+        email: string;
+        firstName?: string;
+        lastName?: string;
+        googleId?: string;
+        githubId?: string;
+        tenantId?: string;
+    }): Promise<UserResponseDto> {
+        const { email, firstName, lastName, googleId, githubId } = profile;
+        let { tenantId } = profile;
+
+        // Resolve tenantId if it's a slug
+        if (tenantId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+            const tenant = await this.prisma.tenant.findUnique({
+                where: { slug: tenantId },
+                select: { id: true },
+            });
+            if (tenant) {
+                tenantId = tenant.id;
+            } else {
+                this.logger.warn(`Tenant not found for slug: ${tenantId}. Falling back to default.`);
+                tenantId = undefined; // Fall back to default logic below
+            }
+        }
+
+        // 1. Try to find user by specific OAuth ID
+        let user = await this.prisma.user.findFirst({
+            where: {
+                OR: [
+                    googleId ? { googleId } : undefined,
+                    githubId ? { githubId } : undefined,
+                ].filter(Boolean) as any[],
+            },
+            include: {
+                userRoles: { include: { role: true } },
+            },
+        });
+
+        if (user) {
+            // Found by OAuth ID - ensure it's still active
+            if (!user.isActive) {
+                throw new UnauthorizedException('User account is deactivated');
+            }
+            return this.mapToUserResponse(user);
+        }
+
+        // 2. Not found by OAuth ID, try to find by email
+        // If tenantId is not provided, we look for any user with this email
+        // We pick the first one we find across all tenants if no tenantId specified
+        const whereClause = tenantId 
+            ? { tenantId, email: email.toLowerCase() } 
+            : { email: email.toLowerCase() };
+
+        user = await this.prisma.user.findFirst({
+            where: whereClause,
+            include: {
+                userRoles: { include: { role: true } },
+            },
+        });
+
+        if (user) {
+            // Found by email - link the OAuth ID
+            user = await this.prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    googleId: googleId || user.googleId,
+                    githubId: githubId || user.githubId,
+                    emailVerified: true, // OAuth emails are considered verified
+                },
+                include: {
+                    userRoles: { include: { role: true } },
+                },
+            });
+            return this.mapToUserResponse(user);
+        }
+
+        // 3. Create new user
+        // We need a tenantId. If none provided, we try to find the oldest active tenant.
+        if (!tenantId) {
+            const defaultTenant = await this.prisma.tenant.findFirst({
+                where: { isActive: true },
+                orderBy: { createdAt: 'asc' },
+            });
+            
+            if (!defaultTenant) {
+                throw new BadRequestException('No tenant available for OAuth sign up');
+            }
+            tenantId = defaultTenant.id;
+        }
+
+        // Get default role for new users
+        const defaultRole = await this.prisma.role.findFirst({
+            where: { tenantId, name: { in: ['member', 'user'] } },
+        });
+
+        user = await this.prisma.user.create({
+            data: {
+                tenantId: tenantId!,
+                email: email.toLowerCase(),
+                firstName,
+                lastName,
+                googleId,
+                githubId,
+                emailVerified: true,
+                userRoles: defaultRole ? {
+                    create: { roleId: defaultRole.id },
+                } : undefined,
+            },
+            include: {
+                userRoles: { include: { role: true } },
+            },
+        });
+
+        return this.mapToUserResponse(user);
+    }
+
+    async getUserById(id: string): Promise<UserResponseDto> {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            include: {
+                userRoles: { include: { role: true } },
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        return this.mapToUserResponse(user);
+    }
+
+    /**
+     * Map Prisma user model to UserResponseDto.
+     */
+    private mapToUserResponse(user: any): UserResponseDto {
         return {
             id: user.id,
             tenantId: user.tenantId,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
-            roles: user.userRoles.map((ur) => ur.role.name),
+            roles: user.userRoles?.map((ur: any) => ur.role.name) || [],
         };
     }
 

@@ -11,28 +11,35 @@ export class TenantResolverMiddleware implements NestMiddleware {
     ) { }
 
     async use(req: Request, res: Response, next: NextFunction) {
-        const tenantId = await this.resolveTenantId(req);
+        const url = req.originalUrl || req.url;
+        
+        // Skip tenant resolution for all authentication routes
+        if (url.includes('/auth/')) {
+            return next();
+        }
 
-        if (!tenantId) {
-            throw new BadRequestException('Tenant identification required');
+        const tenantIdOrSlug = await this.resolveTenantId(req);
+
+        if (!tenantIdOrSlug) {
+            throw new BadRequestException(`Tenant identification required. [Path: ${url}]`);
         }
 
         // Verify tenant exists and is active
-        const tenant = await this.prisma.tenant.findUnique({
-            where: { id: tenantId },
-            select: { id: true, isActive: true },
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantIdOrSlug);
+        
+        const tenant = await this.prisma.tenant.findFirst({
+            where: isUuid 
+                ? { id: tenantIdOrSlug, isActive: true }
+                : { slug: tenantIdOrSlug, isActive: true },
+            select: { id: true },
         });
 
         if (!tenant) {
             throw new BadRequestException('Invalid tenant');
         }
 
-        if (!tenant.isActive) {
-            throw new BadRequestException('Tenant is inactive');
-        }
-
-        // Run the rest of the request within tenant context
-        this.tenantContext.run(tenantId, () => {
+        // Run the rest of the request within tenant context using the resolved UUID
+        this.tenantContext.run(tenant.id, () => {
             next();
         });
     }
@@ -59,7 +66,13 @@ export class TenantResolverMiddleware implements NestMiddleware {
             }
         }
 
-        // Priority 3: JWT payload (extracted by auth guard, if available)
+        // Priority 3: Query parameters (for OAuth redirects and links)
+        const queryTenantId = req.query.tenant || req.query.tenantId;
+        if (typeof queryTenantId === 'string' && queryTenantId.length > 0) {
+            return queryTenantId;
+        }
+
+        // Priority 4: JWT payload (extracted by auth guard, if available)
         const user = (req as any).user;
         if (user?.tenantId) {
             return user.tenantId;

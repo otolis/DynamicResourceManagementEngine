@@ -343,6 +343,44 @@
   max-width: 480px;
 }
 
+/* === Google Login Button === */
+.google-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  margin-top: var(--spacing-sm);
+}
+
+.google-btn__icon {
+  flex-shrink: 0;
+}
+
+/* === Divider === */
+.login-card__divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: var(--spacing-sm) 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.login-card__divider::before,
+.login-card__divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.login-card__divider span {
+  padding: 0 var(--spacing-md);
+}
+
 /* === Forgot Password Link === */
 .login-card__forgot {
   text-align: right;

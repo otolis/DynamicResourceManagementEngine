@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { authApi } from '../api';
+import { authApi, apiClient } from '../api';
 import { AnimatedCard } from '../components/ui/animatedCard';
 import { CyberButton } from '../components/ui/cyberButton';
 import '../styles/pages.css';
@@ -10,7 +10,7 @@ type VerificationStatus = 'loading' | 'success' | 'error' | 'no-token';
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const tenantId = searchParams.get('tenant') || 'default-tenant';
+  const tenantId = searchParams.get('tenant') || apiClient.getTenantId() || 'default-tenant';
 
   const [status, setStatus] = useState<VerificationStatus>(token ? 'loading' : 'no-token');
   const [message, setMessage] = useState('');

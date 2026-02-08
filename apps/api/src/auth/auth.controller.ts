@@ -10,7 +10,10 @@ import {
     UnauthorizedException,
     Headers,
     UseGuards,
+    Req,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 import * as express from 'express';
 import { AuthService } from './auth.service';
 import { 
@@ -23,12 +26,18 @@ import {
 } from './dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard, GoogleOAuthGuard, GithubAuthGuard } from './guards';
 import type { AuthenticatedUser } from './strategies/jwt.strategy';
+
+import { TenantContextService } from '../tenant/tenant-context.service';
 
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) { }
+    constructor(
+        private readonly authService: AuthService,
+        private readonly tenantContext: TenantContextService,
+        private readonly configService: ConfigService,
+    ) { }
 
     // =========================================================================
     // REGISTRATION
@@ -39,12 +48,8 @@ export class AuthController {
     @HttpCode(HttpStatus.CREATED)
     async register(
         @Body() registerDto: RegisterDto,
-        @Headers('x-tenant-id') tenantId: string,
     ): Promise<RegisterResponseDto> {
-        if (!tenantId) {
-            throw new UnauthorizedException('Tenant identification required');
-        }
-
+        const tenantId = this.tenantContext.getTenantId();
         return this.authService.register(registerDto, tenantId);
     }
 
@@ -65,12 +70,8 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     async forgotPassword(
         @Body() dto: ForgotPasswordDto,
-        @Headers('x-tenant-id') tenantId: string,
     ): Promise<{ message: string }> {
-        if (!tenantId) {
-            throw new UnauthorizedException('Tenant identification required');
-        }
-
+        const tenantId = this.tenantContext.getTenantId();
         return this.authService.forgotPassword(dto.email, tenantId);
     }
 
@@ -92,12 +93,9 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     async login(
         @Body() loginDto: LoginDto,
-        @Headers('x-tenant-id') tenantId: string,
         @Res({ passthrough: true }) res: express.Response,
     ): Promise<LoginResponseDto> {
-        if (!tenantId) {
-            throw new UnauthorizedException('Tenant identification required');
-        }
+        const tenantId = this.tenantContext.getTenantId();
 
         const user = await this.authService.validateUser(
             loginDto.email,
@@ -159,6 +157,12 @@ export class AuthController {
         };
     }
 
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    async getProfile(@CurrentUser() user: AuthenticatedUser) {
+        return this.authService.getUserById(user.id);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Post('logout')
     @HttpCode(HttpStatus.OK)
@@ -177,6 +181,57 @@ export class AuthController {
         });
 
         return { message: 'Logged out successfully' };
+    }
+
+    // =========================================================================
+    // OAUTH LOGINS
+    // =========================================================================
+
+    @Public()
+    @Get('google')
+    @UseGuards(GoogleOAuthGuard)
+    async googleAuth() {
+        // Initiates the Google OAuth2 login flow
+    }
+
+    @Public()
+    @Get('google/callback')
+    @UseGuards(GoogleOAuthGuard)
+    async googleAuthCallback(@Req() req: any, @Res() res: express.Response) {
+        const user = await this.authService.validateOAuthUser(req.user);
+        return this.handleOAuthSuccess(user, res);
+    }
+
+    @Public()
+    @Get('github')
+    @UseGuards(GithubAuthGuard)
+    async githubAuth() {
+        // Initiates the GitHub OAuth2 login flow
+    }
+
+    @Public()
+    @Get('github/callback')
+    @UseGuards(GithubAuthGuard)
+    async githubAuthCallback(@Req() req: any, @Res() res: express.Response) {
+        const user = await this.authService.validateOAuthUser(req.user);
+        return this.handleOAuthSuccess(user, res);
+    }
+
+    private async handleOAuthSuccess(user: any, res: express.Response) {
+        const tokens = await this.authService.login(user);
+
+        // Set refresh token as HttpOnly cookie
+        res.cookie('refreshToken', tokens.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/auth',
+        });
+
+        const frontendUrl = this.configService.get('APP_URL') || 'http://localhost:5173';
+        // Redirect to a frontend route that handles the login success
+        res.redirect(`${frontendUrl}/auth/callback?token=${tokens.accessToken}`);
     }
 
     private parseCookies(cookieHeader: string): Record<string, string> {

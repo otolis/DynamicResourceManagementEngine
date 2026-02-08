@@ -1,17 +1,27 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api';
+import { apiClient } from '../api/client';
 import { CyberButton } from '../components/ui/cyberButton';
 import { CyberInput } from '../components/ui/cyberInput';
 import { AnimatedCard } from '../components/ui/animatedCard';
 import '../styles/pages.css';
 
 export function ForgotPasswordPage() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
-  const [tenantId, setTenantId] = useState('default-tenant');
+  const [tenantId, setTenantId] = useState(searchParams.get('tenant') || apiClient.getTenantId() || 'default-tenant');
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Sync with URL params
+  useEffect(() => {
+    const urlTenant = searchParams.get('tenant');
+    if (urlTenant) {
+      setTenantId(urlTenant);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,10 +115,10 @@ export function ForgotPasswordPage() {
 
             <form onSubmit={handleSubmit} className="login-card__form">
               <CyberInput
-                label="Tenant ID"
+                label="Organization Slug or ID"
                 value={tenantId}
                 onChange={(e) => setTenantId(e.target.value)}
-                placeholder="your-tenant-id"
+                placeholder="e.g. acme-corp or UUID"
               />
 
               <CyberInput

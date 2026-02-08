@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { authApi } from '../api';
+import { apiClient } from '../api/client';
 import { CyberButton } from '../components/ui/cyberButton';
 import { CyberInput } from '../components/ui/cyberInput';
 import { AnimatedCard } from '../components/ui/animatedCard';
@@ -29,7 +30,7 @@ export function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const tenantId = searchParams.get('tenant') || 'default-tenant';
+  const tenantId = searchParams.get('tenant') || apiClient.getTenantId() || 'default-tenant';
 
   const [formData, setFormData] = useState({
     password: '',

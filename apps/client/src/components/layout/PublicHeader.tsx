@@ -55,6 +55,9 @@ export function PublicHeader() {
         >
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </CyberButton>
+        <Link to="/register">
+          <CyberButton variant="glass" size="sm">Register</CyberButton>
+        </Link>
         <Link to="/app">
           <CyberButton variant="primary" size="sm">Enter App</CyberButton>
         </Link>
