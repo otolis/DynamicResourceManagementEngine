@@ -246,6 +246,10 @@ export class AuthService {
             throw new UnauthorizedException('Please verify your email address before logging in.');
         }
 
+        if (!user.passwordHash) {
+            throw new UnauthorizedException('Please sign in using your social provider or reset your password to set a local password.');
+        }
+
         const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
         
         if (!isPasswordValid) {
