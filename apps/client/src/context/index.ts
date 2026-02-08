@@ -9,3 +9,4 @@ export { CommentsProvider, useComments, type Comment } from './CommentsContext';
 export { PinsProvider, usePins } from './PinsContext';
 export { RecentProvider, useRecent } from './RecentContext';
 export { ActivityProvider, useActivity } from './ActivityContext';
+export { ThemeProvider, useTheme } from './ThemeContext';

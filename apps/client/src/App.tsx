@@ -10,6 +10,7 @@ import {
   PinsProvider,
   RecentProvider,
   ActivityProvider,
+  ThemeProvider,
 } from './context';
 import './styles/base.css';
 import './styles/components.css';
@@ -24,6 +25,10 @@ import { AboutPage } from './pages/aboutPage';
 import { ContactPage } from './pages/contactPage';
 import { PricingPage } from './pages/pricingPage';
 import { LoginPage } from './pages/loginPage';
+import { RegisterPage } from './pages/registerPage';
+import { VerifyEmailPage } from './pages/verifyEmailPage';
+import { ForgotPasswordPage } from './pages/forgotPasswordPage';
+import { ResetPasswordPage } from './pages/resetPasswordPage';
 
 // App Pages
 import { DashboardPage } from './pages/dashboardPage';
@@ -80,6 +85,10 @@ function AppRoutes() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       
       {/* Protected App Routes */}
       <Route path="/app" element={
@@ -119,11 +128,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <AppRoutes />
-      </ToastProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
