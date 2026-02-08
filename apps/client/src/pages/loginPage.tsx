@@ -90,6 +90,12 @@ export function LoginPage() {
                 placeholder="--------"
               />
 
+              <div className="login-card__forgot">
+                <Link to="/forgot-password" className="login-card__forgot-link">
+                  Forgot password?
+                </Link>
+              </div>
+
               <CyberButton
                 type="submit"
                 variant="primary"
@@ -102,7 +108,7 @@ export function LoginPage() {
 
             <p className="login-card__footer">
               Don't have an account?{' '}
-              <Link to="/contact">Contact Admin</Link>
+              <Link to="/register">Create Account</Link>
             </p>
           </div>
         </AnimatedCard>

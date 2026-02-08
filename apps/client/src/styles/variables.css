@@ -77,10 +77,10 @@ body.light-mode {
   --color-text: #1a1a1a;
   --color-text-muted: #525252;
   --color-text-bright: #0a0a0a;
-  /* Keep the SAME accent color as dark mode for consistency */
-  --color-accent: #c8ff00;
-  --color-accent-dim: #a3cc00;
-  --color-accent-text: #0c0c0c;
+  /* Use darker accent for better contrast on light backgrounds */
+  --color-accent: #0d7c3e;
+  --color-accent-dim: #065f2e;
+  --color-accent-text: #ffffff;
   --color-border: #d1d1d1;
   --color-border-strong: #a0a0a0;
   --color-error: #dc2626;
