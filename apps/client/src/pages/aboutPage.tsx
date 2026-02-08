@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { CyberButton } from '../components/ui/cyberButton';
+import { PublicHeader } from '../components/layout/PublicHeader';
 import '../styles/pages.css';
 
 const stack = [
@@ -13,21 +14,7 @@ const stack = [
 export function AboutPage() {
   return (
     <div className="public-page">
-      <nav className="public-nav">
-        <Link to="/" className="public-nav__logo">
-          <span className="public-nav__logo-icon">&#9670;</span>
-          DRME
-        </Link>
-        <div className="public-nav__links">
-          <Link to="/features" className="public-nav__link">Features</Link>
-          <Link to="/pricing" className="public-nav__link">Pricing</Link>
-          <Link to="/about" className="public-nav__link public-nav__link--active">About</Link>
-          <Link to="/contact" className="public-nav__link">Contact</Link>
-          <Link to="/app">
-            <CyberButton variant="primary" size="sm">Enter App</CyberButton>
-          </Link>
-        </div>
-      </nav>
+      <PublicHeader />
 
       <section className="hero" style={{ minHeight: '40vh' }}>
         <h1 className="hero__title">About DRME</h1>

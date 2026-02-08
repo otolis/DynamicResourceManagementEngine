@@ -47,12 +47,27 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  // Email verification
+  emailVerified       Boolean   @default(false)
+  verificationToken   String?
+  verificationExpiry  DateTime?
+
+  // Password reset
+  passwordResetToken  String?
+  passwordResetExpiry DateTime?
+
+  // Failed login tracking for account lockout
+  failedLoginAttempts Int       @default(0)
+  lockoutUntil        DateTime?
+
   // Relations
   userRoles       UserRole[]
   entityInstances EntityInstance[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
+  @@index([verificationToken])
+  @@index([passwordResetToken])
 }
 
 model Role {

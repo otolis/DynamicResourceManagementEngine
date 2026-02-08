@@ -1,8 +1,10 @@
 import {
     Controller,
     Post,
+    Get,
     Body,
     Res,
+    Param,
     HttpCode,
     HttpStatus,
     UnauthorizedException,
@@ -11,7 +13,14 @@ import {
 } from '@nestjs/common';
 import * as express from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto, LoginResponseDto } from './dto';
+import { 
+    LoginDto, 
+    LoginResponseDto,
+    RegisterDto,
+    RegisterResponseDto,
+    ForgotPasswordDto,
+    ResetPasswordDto,
+} from './dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -20,6 +29,63 @@ import type { AuthenticatedUser } from './strategies/jwt.strategy';
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
+
+    // =========================================================================
+    // REGISTRATION
+    // =========================================================================
+
+    @Public()
+    @Post('register')
+    @HttpCode(HttpStatus.CREATED)
+    async register(
+        @Body() registerDto: RegisterDto,
+        @Headers('x-tenant-id') tenantId: string,
+    ): Promise<RegisterResponseDto> {
+        if (!tenantId) {
+            throw new UnauthorizedException('Tenant identification required');
+        }
+
+        return this.authService.register(registerDto, tenantId);
+    }
+
+    @Public()
+    @Get('verify-email/:token')
+    async verifyEmail(
+        @Param('token') token: string,
+    ): Promise<{ message: string }> {
+        return this.authService.verifyEmail(token);
+    }
+
+    // =========================================================================
+    // PASSWORD RESET
+    // =========================================================================
+
+    @Public()
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    async forgotPassword(
+        @Body() dto: ForgotPasswordDto,
+        @Headers('x-tenant-id') tenantId: string,
+    ): Promise<{ message: string }> {
+        if (!tenantId) {
+            throw new UnauthorizedException('Tenant identification required');
+        }
+
+        return this.authService.forgotPassword(dto.email, tenantId);
+    }
+
+    @Public()
+    @Post('reset-password')
+    @HttpCode(HttpStatus.OK)
+    async resetPassword(
+        @Body() dto: ResetPasswordDto,
+    ): Promise<{ message: string }> {
+        return this.authService.resetPassword(dto.token, dto.newPassword);
+    }
+
+    // =========================================================================
+    // LOGIN / LOGOUT
+    // =========================================================================
 
     @Public()
     @Post('login')

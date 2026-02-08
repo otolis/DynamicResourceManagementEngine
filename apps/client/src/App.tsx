@@ -10,6 +10,7 @@ import {
   PinsProvider,
   RecentProvider,
   ActivityProvider,
+  ThemeProvider,
 } from './context';
 import './styles/base.css';
 import './styles/components.css';
@@ -119,11 +120,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <AppRoutes />
-      </ToastProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

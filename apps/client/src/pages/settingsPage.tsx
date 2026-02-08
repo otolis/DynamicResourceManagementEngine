@@ -1,36 +1,14 @@
-import { useState, useEffect } from 'react';
 import { User, Moon, Sun, Shield, Building2 } from 'lucide-react';
 import { FluidShell } from '../components/layout/fluidShell';
 import { CyberButton } from '../components/ui/cyberButton';
 import { AnimatedCard } from '../components/ui/animatedCard';
-import { useAuth } from '../context';
+import { useAuth, useTheme } from '../context';
 import { apiClient } from '../api';
 
 export function SettingsPage() {
   const { user } = useAuth();
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    // Initialize from localStorage or default to dark
-    const saved = localStorage.getItem('theme') as 'dark' | 'light' | null;
-    return saved || 'dark';
-  });
+  const { theme, toggleTheme } = useTheme();
   const tenantId = apiClient.getTenantId();
-
-  // Apply theme class on mount and changes
-  useEffect(() => {
-    if (theme === 'light') {
-      document.body.classList.add('light-mode');
-      document.body.classList.remove('dark-mode');
-    } else {
-      document.body.classList.add('dark-mode');
-      document.body.classList.remove('light-mode');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
 
   return (
     <FluidShell>

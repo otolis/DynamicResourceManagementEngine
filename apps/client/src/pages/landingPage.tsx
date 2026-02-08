@@ -3,6 +3,7 @@ import { Zap, Shield, Database, Code } from 'lucide-react';
 import { useRef, useEffect } from 'react';
 import anime from 'animejs';
 import { CyberButton } from '../components/ui/cyberButton';
+import { PublicHeader } from '../components/layout/PublicHeader';
 import '../styles/pages.css';
 
 export function LandingPage() {
@@ -57,22 +58,7 @@ export function LandingPage() {
 
   return (
     <div className="public-page">
-      {/* Navigation */}
-      <nav className="public-nav">
-        <Link to="/" className="public-nav__logo">
-          <span className="public-nav__logo-icon">&#9670;</span>
-          DRME
-        </Link>
-        <div className="public-nav__links">
-          <Link to="/features" className="public-nav__link">Features</Link>
-          <Link to="/pricing" className="public-nav__link">Pricing</Link>
-          <Link to="/about" className="public-nav__link">About</Link>
-          <Link to="/contact" className="public-nav__link">Contact</Link>
-          <Link to="/app">
-            <CyberButton variant="primary" size="sm">Enter App</CyberButton>
-          </Link>
-        </div>
-      </nav>
+      <PublicHeader />
 
       {/* Hero Section */}
       <section className="hero">
