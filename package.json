@@ -5,7 +5,7 @@
   "description": "Dynamic Resource Management Engine - Meta-schema ERP system",
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
-    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:api": "npm run start:dev --workspace=apps/api",
     "dev:client": "npm run dev --workspace=apps/client",
     "build": "npm run build --workspaces --if-present",
     "build:api": "npm run build --workspace=apps/api",
@@ -15,7 +15,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:migrate:dev": "npm run db:migrate:dev --workspace=apps/api",
-    "db:seed": "npm run db:seed --workspace=apps/api",
+    "db:seed": "npm run prisma:seed --workspace=apps/api",
+    "prisma:seed": "npm run prisma:seed --workspace=apps/api",
     "db:studio": "npm run db:studio --workspace=apps/api",
     "docker:up": "docker-compose -f docker/docker-compose.dev.yml up -d",
     "docker:down": "docker-compose -f docker/docker-compose.dev.yml down",

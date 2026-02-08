@@ -4,6 +4,7 @@ import { EntityTypeRepository } from './entity-type.repository';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { CreateEntityTypeDto } from './dto';
+import { Prisma } from '@prisma/client';
 
 describe('EntityTypeRepository', () => {
     let repository: EntityTypeRepository;
@@ -83,9 +84,12 @@ describe('EntityTypeRepository', () => {
                 displayName: 'Project',
             };
 
-            mockPrismaService.entityType.create.mockRejectedValue({
-                code: 'P2002',
-            });
+            // Create a proper PrismaClientKnownRequestError instance
+            const prismaError = new Prisma.PrismaClientKnownRequestError(
+                'Unique constraint violation',
+                { code: 'P2002', clientVersion: '5.0.0' },
+            );
+            mockPrismaService.entityType.create.mockRejectedValue(prismaError);
 
             await expect(repository.create(dto)).rejects.toThrow(ConflictException);
         });

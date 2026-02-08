@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { CyberButton } from '../components/ui/cyberButton';
 import { CyberInput, CyberTextarea } from '../components/ui/cyberInput';
 import { AnimatedCard } from '../components/ui/animatedCard';
+import { PublicHeader } from '../components/layout/PublicHeader';
 import '../styles/pages.css';
 
 export function ContactPage() {
@@ -39,22 +39,7 @@ export function ContactPage() {
 
   return (
     <div className="public-page">
-      {/* Navigation */}
-      <nav className="public-nav">
-        <Link to="/" className="public-nav__logo">
-          <span className="public-nav__logo-icon">◈</span>
-          DRME
-        </Link>
-        <div className="public-nav__links">
-          <Link to="/features" className="public-nav__link">Features</Link>
-          <Link to="/pricing" className="public-nav__link">Pricing</Link>
-          <Link to="/about" className="public-nav__link">About</Link>
-          <Link to="/contact" className="public-nav__link public-nav__link--active">Contact</Link>
-          <Link to="/app">
-            <CyberButton variant="primary" size="sm">Enter App</CyberButton>
-          </Link>
-        </div>
-      </nav>
+      <PublicHeader />
 
       {/* Hero */}
       <section className="hero" style={{ minHeight: '40vh' }}>

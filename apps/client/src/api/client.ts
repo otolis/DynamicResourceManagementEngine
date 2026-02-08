@@ -1,6 +1,6 @@
 // API Client with JWT token management for DRME backend
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
 const DEFAULT_TENANT_ID = import.meta.env.VITE_DEFAULT_TENANT_ID || 'default-tenant';
 
 interface ApiClientOptions {
@@ -21,12 +21,42 @@ class ApiClient {
   private tenantId: string = DEFAULT_TENANT_ID;
 
   constructor() {
-    // Load token from localStorage on init
-    this.accessToken = localStorage.getItem('accessToken');
-    const storedTenantId = localStorage.getItem('tenantId');
-    if (storedTenantId) {
-      this.tenantId = storedTenantId;
+    // 1. Detect tenant from subdomain (subdomain.drme.com)
+    const subdomainTenant = this.resolveSubdomainTenant();
+    if (subdomainTenant) {
+      this.tenantId = subdomainTenant;
+    } else {
+      // 2. Fallback to localStorage
+      const storedTenantId = localStorage.getItem('tenantId');
+      if (storedTenantId) {
+        this.tenantId = storedTenantId;
+      }
     }
+
+    // 3. Load token from localStorage
+    this.accessToken = localStorage.getItem('accessToken');
+  }
+
+  private resolveSubdomainTenant(): string | null {
+    if (typeof window === 'undefined') return null;
+    
+    const hostname = window.location.hostname;
+    // Skip localhost and IP addresses
+    if (
+      hostname === 'localhost' || 
+      hostname === '127.0.0.1' ||
+      /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    ) {
+      return null;
+    }
+
+    const parts = hostname.split('.');
+    // Need at least 3 parts for subdomain (e.g., tenant.example.com)
+    if (parts.length >= 3) {
+      return parts[0];
+    }
+
+    return null;
   }
 
   setAccessToken(token: string | null) {

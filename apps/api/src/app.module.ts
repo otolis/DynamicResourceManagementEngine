@@ -67,13 +67,11 @@ import { AttributeModule } from './attribute/attribute.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply tenant resolver to all routes except auth endpoints
     consumer
       .apply(TenantResolverMiddleware)
       .exclude(
-        { path: 'auth/login', method: RequestMethod.POST },
-        { path: 'auth/refresh', method: RequestMethod.POST },
-        { path: 'health', method: RequestMethod.GET },
+        { path: '/auth/*path', method: RequestMethod.ALL },
+        { path: '/health', method: RequestMethod.GET },
       )
       .forRoutes('*');
   }

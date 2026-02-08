@@ -1,7 +1,7 @@
 @import './variables.css';
 
 /* ========================================
-   Cyber-Fluid Component Styles
+   Component Styles — Neo-Brutalist
    ======================================== */
 
 /* === CyberButton === */
@@ -12,67 +12,71 @@
   gap: var(--spacing-xs);
   font-family: var(--font-sans);
   font-weight: 600;
-  border: none;
+  border: var(--border-strong);
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   line-height: 1;
-  border-radius: var(--radius-md);
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* Sizes */
 .cyber-button--sm {
   padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 0.875rem;
-  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
 }
 
 .cyber-button--md {
   padding: var(--spacing-sm) var(--spacing-md);
-  font-size: 1rem;
+  font-size: 0.875rem;
 }
 
 .cyber-button--lg {
   padding: var(--spacing-md) var(--spacing-lg);
-  font-size: 1.125rem;
-  border-radius: var(--radius-lg);
+  font-size: 1rem;
 }
 
 /* Primary Variant */
 .cyber-button--primary {
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
+  background: var(--color-accent);
   color: var(--color-accent-text);
-  box-shadow: var(--shadow-sm), 0 0 20px var(--color-accent-glow);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
 }
 
 .cyber-button--primary:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md), var(--shadow-glow);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--color-accent-dim);
 }
 
-/* Glass Variant */
+.cyber-button--primary:active {
+  transform: translate(0, 0);
+  box-shadow: none;
+}
+
+/* Glass Variant — now "outlined" */
 .cyber-button--glass {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  background: transparent;
+  border: var(--border-strong);
   color: var(--color-text);
 }
 
 .cyber-button--glass:hover {
-  background: var(--glass-bg-hover);
-  border-color: var(--glass-border-hover);
-  transform: translateY(-1px);
+  background: var(--color-surface);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Ghost Variant */
 .cyber-button--ghost {
   background: transparent;
+  border-color: transparent;
   color: var(--color-text-muted);
 }
 
 .cyber-button--ghost:hover {
-  background: var(--glass-bg);
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
@@ -80,13 +84,15 @@
 .cyber-input-group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 4px;
 }
 
 .cyber-label {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .cyber-input,
@@ -95,20 +101,17 @@
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
   font-family: inherit;
-  font-size: 1rem;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  background: var(--color-bg);
+  border: var(--border-strong);
   color: var(--color-text);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast);
 }
 
 .cyber-input::placeholder,
 .cyber-textarea::placeholder {
   color: var(--color-text-muted);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .cyber-input:focus,
@@ -116,7 +119,6 @@
 .cyber-select:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-glow);
 }
 
 .cyber-input--mono {
@@ -126,11 +128,6 @@
 .cyber-input--error,
 .cyber-textarea--error {
   border-color: var(--color-error);
-}
-
-.cyber-input--error:focus,
-.cyber-textarea--error:focus {
-  box-shadow: 0 0 0 3px var(--color-error-bg);
 }
 
 .cyber-error {
@@ -146,7 +143,7 @@
 .cyber-select {
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6,9 12,15 18,9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6,9 12,15 18,9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right var(--spacing-sm) center;
   padding-right: var(--spacing-xl);
@@ -169,31 +166,28 @@
 }
 
 .cyber-checkbox {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   accent-color: var(--color-accent);
   cursor: pointer;
 }
 
 /* === AnimatedCard === */
 .animated-card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  border: var(--border);
   padding: var(--spacing-lg);
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .animated-card:hover {
-  border-color: var(--glass-border-hover);
+  transform: translate(-2px, -2px);
   box-shadow: var(--shadow-md);
 }
 
 .animated-card--initial {
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(20px);
 }
 
 /* === SchemaGrid === */

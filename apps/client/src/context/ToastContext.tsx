@@ -90,7 +90,6 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
         border: `1px solid ${colors.border}`,
         borderRadius: 'var(--radius-lg)',
         padding: 'var(--spacing-md)',
-        backdropFilter: 'blur(12px)',
         display: 'flex',
         gap: 'var(--spacing-sm)',
         minWidth: '300px',

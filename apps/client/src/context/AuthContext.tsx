@@ -1,7 +1,7 @@
 // Auth Context for global authentication state
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { authApi, type User, type LoginCredentials } from '../api';
+import { authApi, apiClient, type User, type LoginCredentials } from '../api';
 
 interface AuthContextType {
   user: User | null;
@@ -9,6 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginCredentials, tenantId?: string) => Promise<void>;
   logout: () => Promise<void>;
+  initializeSession: (token: string) => Promise<void>;
   error: string | null;
 }
 
@@ -29,16 +30,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const token = authApi.getStoredToken();
       if (token) {
         try {
-          // Try to refresh to validate token and get user data
-          await authApi.refreshToken();
-          // For now, we don't have a /me endpoint, so we'll parse from stored data
-          const storedUser = localStorage.getItem('user');
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          }
+          const userProfile = await authApi.getProfile();
+          setUser(userProfile);
+          // Synchronize tenantId for API requests
+          apiClient.setTenantId(userProfile.tenantId);
+          localStorage.setItem('user', JSON.stringify(userProfile));
         } catch {
           // Token invalid, clear auth
           authApi.logout();
+          setUser(null);
         }
       }
       setIsLoading(false);
@@ -46,6 +46,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     checkAuth();
   }, []);
+
+  const initializeSession = async (token: string) => {
+    setIsLoading(true);
+    try {
+      // Set the token in apiClient via authApi
+      authApi.setStoredToken(token);
+      // Fetch user profile
+      const userProfile = await authApi.getProfile();
+      setUser(userProfile);
+      // Synchronize tenantId for API requests
+      apiClient.setTenantId(userProfile.tenantId);
+      localStorage.setItem('user', JSON.stringify(userProfile));
+    } catch (err) {
+      console.error('Failed to initialize session:', err);
+      authApi.logout();
+      setUser(null);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (credentials: LoginCredentials, tenantId?: string) => {
     setError(null);
@@ -83,6 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isLoading,
         login,
         logout,
+        initializeSession,
         error,
       }}
     >
