@@ -108,7 +108,7 @@ async function bootstrap() {
   // ==========================================================================
   const port = configService.get<number>('API_PORT') || 3000;
 
-  await app.listen(port);
+  await app.listen(port, '127.0.0.1');
   logger.log(`Application running on port ${port}`);
   logger.log(`Environment: ${configService.get('NODE_ENV')}`);
   logger.log(`CORS origins: ${corsOrigins.join(', ')}`);

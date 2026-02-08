@@ -1,10 +1,3 @@
-// =============================================================================
-// DRME Prisma Schema - Meta-Schema with Security-First Design
-// =============================================================================
-// Every tenant-scoped table MUST have tenantId column with index.
-// This is enforced at the repository layer for data isolation.
-// =============================================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,81 +6,61 @@ datasource db {
   provider = "postgresql"
 }
 
-// =============================================================================
-// CORE SECURITY MODELS
-// =============================================================================
-
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  users               User[]
-  roles               Role[]
-  entityTypes         EntityType[]
+  id                  String               @id @default(uuid())
+  name                String
+  slug                String               @unique
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   accessPolicies      AccessPolicy[]
+  entityTypes         EntityType[]
+  roles               Role[]
+  users               User[]
   workflowDefinitions WorkflowDefinition[]
 }
 
 model User {
-  id             String   @id @default(uuid())
-  tenantId       String
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  email          String
-  passwordHash   String?
-  firstName      String?
-  lastName       String?
-  isActive       Boolean  @default(true)
-  refreshToken   String?  // Hashed refresh token for revocation
-  lastLoginAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // OAuth Providers
-  googleId       String?
-  githubId       String?
-
-  // Email verification
-  emailVerified       Boolean   @default(false)
-  verificationToken   String?
-  verificationExpiry  DateTime?
-
-  // Password reset
-  passwordResetToken  String?
-  passwordResetExpiry DateTime?
-
-  // Failed login tracking for account lockout
-  failedLoginAttempts Int       @default(0)
+  id                  String           @id @default(uuid())
+  tenantId            String
+  email               String
+  passwordHash        String?
+  firstName           String?
+  lastName            String?
+  isActive            Boolean          @default(true)
+  refreshToken        String?
+  lastLoginAt         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  emailVerified       Boolean          @default(false)
+  failedLoginAttempts Int              @default(0)
   lockoutUntil        DateTime?
-
-  // Relations
-  userRoles       UserRole[]
-  entityInstances EntityInstance[]
+  passwordResetExpiry DateTime?
+  passwordResetToken  String?
+  verificationExpiry  DateTime?
+  verificationToken   String?
+  githubId            String?          @unique
+  googleId            String?          @unique
+  entityInstances     EntityInstance[]
+  tenant              Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userRoles           UserRole[]
 
   @@unique([tenantId, email])
-  @@unique([googleId])
-  @@unique([githubId])
   @@index([tenantId])
   @@index([verificationToken])
   @@index([passwordResetToken])
 }
 
 model Role {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
   displayName String
   description String?
-  isSystem    Boolean  @default(false) // Prevent deletion of core roles
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  isSystem    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   permissions RolePermission[]
   users       UserRole[]
 
@@ -96,78 +69,64 @@ model Role {
 }
 
 model Permission {
-  id       String @id @default(uuid())
-  resource String // "entityType", "entityInstance", "workflow", "user", "role"
-  action   String // "create", "read", "update", "delete", "manage"
-
-  // Relations
-  roles RolePermission[]
+  id       String           @id @default(uuid())
+  resource String
+  action   String
+  roles    RolePermission[]
 
   @@unique([resource, action])
 }
 
 model RolePermission {
   roleId       String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permissionId String
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
 }
 
 model UserRole {
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   roleId String
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
 }
 
-// ABAC Policy Model
 model AccessPolicy {
   id          String       @id @default(uuid())
   tenantId    String
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
   description String?
-  resource    String       // "entityInstance"
-  action      String       // "create", "read", "update", "delete"
-  conditions  Json         // ABAC conditions in JSON format
+  resource    String
+  action      String
+  conditions  Json
   effect      PolicyEffect @default(ALLOW)
-  priority    Int          @default(0) // Higher = evaluated first
+  priority    Int          @default(0)
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, name])
   @@index([tenantId, resource, action])
 }
 
-enum PolicyEffect {
-  ALLOW
-  DENY
-}
-
-// =============================================================================
-// META-SCHEMA MODELS
-// =============================================================================
-
 model EntityType {
-  id          String   @id @default(uuid())
+  id          String               @id @default(uuid())
   tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String   // "project", "task", "invoice"
-  displayName String   // "Project", "Task", "Invoice"
+  name        String
+  displayName String
   description String?
-  iconName    String?  // For UI rendering
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  iconName    String?
+  isActive    Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
   attributes  Attribute[]
   instances   EntityInstance[]
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   workflows   WorkflowDefinition[]
 
   @@unique([tenantId, name])
@@ -175,32 +134,147 @@ model EntityType {
 }
 
 model Attribute {
-  id              String   @id @default(uuid())
-  tenantId        String
-  entityTypeId    String
-  entityType      EntityType @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
-  name            String   // "title", "dueDate", "amount"
-  displayName     String   // "Title", "Due Date", "Amount"
-  description     String?
-  dataType        DataType
-  isRequired      Boolean  @default(false)
-  isUnique        Boolean  @default(false)
-  isSearchable    Boolean  @default(false)
-  defaultValue    Json?
-  validationRules Json?    // {"min": 0, "max": 100, "pattern": "..."}
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  // Relations
-  options AttributeOption[]
-  values  AttributeValue[]
-
-  // For RELATION type - target entity type
+  id                  String            @id @default(uuid())
+  tenantId            String
+  entityTypeId        String
+  name                String
+  displayName         String
+  description         String?
+  dataType            DataType
+  isRequired          Boolean           @default(false)
+  isUnique            Boolean           @default(false)
+  isSearchable        Boolean           @default(false)
+  defaultValue        Json?
+  validationRules     Json?
+  sortOrder           Int               @default(0)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
   relatedEntityTypeId String?
+  entityType          EntityType        @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
+  options             AttributeOption[]
+  values              AttributeValue[]
 
   @@unique([entityTypeId, name])
   @@index([tenantId])
+}
+
+model AttributeOption {
+  id          String    @id @default(uuid())
+  attributeId String
+  value       String
+  displayName String
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([attributeId, value])
+}
+
+model EntityInstance {
+  id               String            @id @default(uuid())
+  tenantId         String
+  entityTypeId     String
+  createdById      String
+  isDeleted        Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  attributeValues  AttributeValue[]
+  createdBy        User              @relation(fields: [createdById], references: [id])
+  entityType       EntityType        @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
+  workflowInstance WorkflowInstance?
+
+  @@index([tenantId])
+  @@index([entityTypeId])
+  @@index([tenantId, entityTypeId])
+}
+
+model AttributeValue {
+  id               String         @id @default(uuid())
+  tenantId         String
+  entityInstanceId String
+  attributeId      String
+  stringValue      String?
+  numberValue      Float?
+  booleanValue     Boolean?
+  dateValue        DateTime?
+  jsonValue        Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  attribute        Attribute      @relation(fields: [attributeId], references: [id])
+  entityInstance   EntityInstance @relation(fields: [entityInstanceId], references: [id], onDelete: Cascade)
+
+  @@unique([entityInstanceId, attributeId])
+  @@index([tenantId])
+}
+
+model WorkflowDefinition {
+  id           String               @id @default(uuid())
+  tenantId     String
+  entityTypeId String
+  name         String
+  displayName  String
+  description  String?
+  isActive     Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  entityType   EntityType           @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
+  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  states       WorkflowState[]
+  transitions  WorkflowTransition[]
+
+  @@unique([tenantId, entityTypeId, name])
+  @@index([tenantId])
+}
+
+model WorkflowState {
+  id                   String               @id @default(uuid())
+  workflowDefinitionId String
+  name                 String
+  displayName          String
+  description          String?
+  color                String?
+  isInitial            Boolean              @default(false)
+  isFinal              Boolean              @default(false)
+  sortOrder            Int                  @default(0)
+  instances            WorkflowInstance[]
+  workflowDefinition   WorkflowDefinition   @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
+  transitionsFrom      WorkflowTransition[] @relation("fromState")
+  transitionsTo        WorkflowTransition[] @relation("toState")
+
+  @@unique([workflowDefinitionId, name])
+}
+
+model WorkflowTransition {
+  id                   String             @id @default(uuid())
+  workflowDefinitionId String
+  fromStateId          String
+  toStateId            String
+  name                 String
+  displayName          String
+  requiredPermission   String?
+  fromState            WorkflowState      @relation("fromState", fields: [fromStateId], references: [id], onDelete: Cascade)
+  toState              WorkflowState      @relation("toState", fields: [toStateId], references: [id], onDelete: Cascade)
+  workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowDefinitionId, fromStateId, toStateId])
+}
+
+model WorkflowInstance {
+  id               String         @id @default(uuid())
+  tenantId         String
+  entityInstanceId String         @unique
+  currentStateId   String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  currentState     WorkflowState  @relation(fields: [currentStateId], references: [id])
+  entityInstance   EntityInstance @relation(fields: [entityInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+enum PolicyEffect {
+  ALLOW
+  DENY
 }
 
 enum DataType {
@@ -214,135 +288,4 @@ enum DataType {
   ENUM
   RELATION
   JSON
-}
-
-model AttributeOption {
-  id          String    @id @default(uuid())
-  attributeId String
-  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
-  value       String
-  displayName String
-  sortOrder   Int       @default(0)
-  isActive    Boolean   @default(true)
-
-  @@unique([attributeId, value])
-}
-
-// =============================================================================
-// INSTANCE DATA MODELS (EAV Pattern)
-// =============================================================================
-
-model EntityInstance {
-  id           String     @id @default(uuid())
-  tenantId     String
-  entityTypeId String
-  entityType   EntityType @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
-  createdById  String
-  createdBy    User       @relation(fields: [createdById], references: [id])
-  isDeleted    Boolean    @default(false) // Soft delete
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  // Relations
-  attributeValues  AttributeValue[]
-  workflowInstance WorkflowInstance?
-
-  @@index([tenantId])
-  @@index([entityTypeId])
-  @@index([tenantId, entityTypeId])
-}
-
-model AttributeValue {
-  id               String         @id @default(uuid())
-  tenantId         String
-  entityInstanceId String
-  entityInstance   EntityInstance @relation(fields: [entityInstanceId], references: [id], onDelete: Cascade)
-  attributeId      String
-  attribute        Attribute      @relation(fields: [attributeId], references: [id])
-
-  // Polymorphic value storage
-  stringValue  String?
-  numberValue  Float?
-  booleanValue Boolean?
-  dateValue    DateTime?
-  jsonValue    Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([entityInstanceId, attributeId])
-  @@index([tenantId])
-}
-
-// =============================================================================
-// WORKFLOW MODELS
-// =============================================================================
-
-model WorkflowDefinition {
-  id           String     @id @default(uuid())
-  tenantId     String
-  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  entityTypeId String
-  entityType   EntityType @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
-  name         String
-  displayName  String
-  description  String?
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  // Relations
-  states      WorkflowState[]
-  transitions WorkflowTransition[]
-
-  @@unique([tenantId, entityTypeId, name])
-  @@index([tenantId])
-}
-
-model WorkflowState {
-  id                   String             @id @default(uuid())
-  workflowDefinitionId String
-  workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
-  name                 String             // "draft", "active", "completed"
-  displayName          String
-  description          String?
-  color                String?            // For UI rendering
-  isInitial            Boolean            @default(false)
-  isFinal              Boolean            @default(false)
-  sortOrder            Int                @default(0)
-
-  // Relations
-  transitionsFrom WorkflowTransition[] @relation("fromState")
-  transitionsTo   WorkflowTransition[] @relation("toState")
-  instances       WorkflowInstance[]
-
-  @@unique([workflowDefinitionId, name])
-}
-
-model WorkflowTransition {
-  id                   String             @id @default(uuid())
-  workflowDefinitionId String
-  workflowDefinition   WorkflowDefinition @relation(fields: [workflowDefinitionId], references: [id], onDelete: Cascade)
-  fromStateId          String
-  fromState            WorkflowState      @relation("fromState", fields: [fromStateId], references: [id], onDelete: Cascade)
-  toStateId            String
-  toState              WorkflowState      @relation("toState", fields: [toStateId], references: [id], onDelete: Cascade)
-  name                 String             // "submit", "approve", "reject"
-  displayName          String
-  requiredPermission   String?            // Permission needed to execute
-
-  @@unique([workflowDefinitionId, fromStateId, toStateId])
-}
-
-model WorkflowInstance {
-  id               String         @id @default(uuid())
-  tenantId         String
-  entityInstanceId String         @unique
-  entityInstance   EntityInstance @relation(fields: [entityInstanceId], references: [id], onDelete: Cascade)
-  currentStateId   String
-  currentState     WorkflowState  @relation(fields: [currentStateId], references: [id])
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-
-  @@index([tenantId])
 }

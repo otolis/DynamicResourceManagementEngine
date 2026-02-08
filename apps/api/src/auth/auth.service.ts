@@ -4,6 +4,7 @@ import {
     ConflictException,
     BadRequestException,
     Logger,
+    NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -300,6 +301,20 @@ export class AuthService {
         const { email, firstName, lastName, googleId, githubId } = profile;
         let { tenantId } = profile;
 
+        // Resolve tenantId if it's a slug
+        if (tenantId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+            const tenant = await this.prisma.tenant.findUnique({
+                where: { slug: tenantId },
+                select: { id: true },
+            });
+            if (tenant) {
+                tenantId = tenant.id;
+            } else {
+                this.logger.warn(`Tenant not found for slug: ${tenantId}. Falling back to default.`);
+                tenantId = undefined; // Fall back to default logic below
+            }
+        }
+
         // 1. Try to find user by specific OAuth ID
         let user = await this.prisma.user.findFirst({
             where: {
@@ -367,7 +382,7 @@ export class AuthService {
 
         // Get default role for new users
         const defaultRole = await this.prisma.role.findFirst({
-            where: { tenantId, name: 'user' },
+            where: { tenantId, name: { in: ['member', 'user'] } },
         });
 
         user = await this.prisma.user.create({
@@ -387,6 +402,21 @@ export class AuthService {
                 userRoles: { include: { role: true } },
             },
         });
+
+        return this.mapToUserResponse(user);
+    }
+
+    async getUserById(id: string): Promise<UserResponseDto> {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            include: {
+                userRoles: { include: { role: true } },
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
 
         return this.mapToUserResponse(user);
     }

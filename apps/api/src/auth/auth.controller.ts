@@ -26,7 +26,7 @@ import {
 } from './dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard, GoogleOAuthGuard, GithubAuthGuard } from './guards';
 import type { AuthenticatedUser } from './strategies/jwt.strategy';
 
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -157,6 +157,12 @@ export class AuthController {
         };
     }
 
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    async getProfile(@CurrentUser() user: AuthenticatedUser) {
+        return this.authService.getUserById(user.id);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Post('logout')
     @HttpCode(HttpStatus.OK)
@@ -183,14 +189,14 @@ export class AuthController {
 
     @Public()
     @Get('google')
-    @UseGuards(AuthGuard('google'))
+    @UseGuards(GoogleOAuthGuard)
     async googleAuth() {
-        // Redirection to Google
+        // Initiates the Google OAuth2 login flow
     }
 
     @Public()
     @Get('google/callback')
-    @UseGuards(AuthGuard('google'))
+    @UseGuards(GoogleOAuthGuard)
     async googleAuthCallback(@Req() req: any, @Res() res: express.Response) {
         const user = await this.authService.validateOAuthUser(req.user);
         return this.handleOAuthSuccess(user, res);
@@ -198,14 +204,14 @@ export class AuthController {
 
     @Public()
     @Get('github')
-    @UseGuards(AuthGuard('github'))
+    @UseGuards(GithubAuthGuard)
     async githubAuth() {
-        // Redirection to GitHub
+        // Initiates the GitHub OAuth2 login flow
     }
 
     @Public()
     @Get('github/callback')
-    @UseGuards(AuthGuard('github'))
+    @UseGuards(GithubAuthGuard)
     async githubAuthCallback(@Req() req: any, @Res() res: express.Response) {
         const user = await this.authService.validateOAuthUser(req.user);
         return this.handleOAuthSuccess(user, res);
