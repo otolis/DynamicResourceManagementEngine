@@ -90,6 +90,10 @@ export const authApi = {
     return apiClient.getAccessToken();
   },
 
+  setStoredToken(token: string) {
+    apiClient.setAccessToken(token);
+  },
+
   async register(credentials: RegisterCredentials, tenantId?: string): Promise<RegisterResponse> {
     if (tenantId) {
       apiClient.setTenantId(tenantId);
@@ -128,5 +132,9 @@ export const authApi = {
     return apiClient.post<ResetPasswordResponse>('auth/reset-password', { token, newPassword }, {
       skipAuth: true,
     });
+  },
+  
+  async getProfile(): Promise<User> {
+    return apiClient.get<User>('auth/me');
   },
 };
