@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { CyberButton } from '../components/ui/cyberButton';
-import { AnimatedCard } from '../components/ui/animatedCard';
 import '../styles/pages.css';
 
 const tiers = [
@@ -56,10 +55,9 @@ const tiers = [
 export function PricingPage() {
   return (
     <div className="public-page">
-      {/* Navigation */}
       <nav className="public-nav">
         <Link to="/" className="public-nav__logo">
-          <span className="public-nav__logo-icon">◈</span>
+          <span className="public-nav__logo-icon">&#9670;</span>
           DRME
         </Link>
         <div className="public-nav__links">
@@ -73,7 +71,6 @@ export function PricingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="hero" style={{ minHeight: '40vh' }}>
         <h1 className="hero__title">Pricing</h1>
         <p className="hero__subtitle">
@@ -81,30 +78,28 @@ export function PricingPage() {
         </p>
       </section>
 
-      {/* Pricing Grid */}
       <section className="page-section">
         <div className="pricing-grid">
-          {tiers.map((tier, index) => (
-            <AnimatedCard
+          {tiers.map((tier) => (
+            <div
               key={tier.name}
-              delay={index * 100}
-              className={tier.featured ? 'pricing-card--featured' : ''}
+              className={`pricing-card ${tier.featured ? 'pricing-card--featured' : ''}`}
             >
-              <div className="pricing-card">
-                <h3 className="pricing-card__name">{tier.name}</h3>
-                <div className="pricing-card__price">
-                  {tier.price}
-                  {tier.period && <span>{tier.period}</span>}
-                </div>
-                <p style={{ color: 'var(--color-text-muted)' }}>{tier.description}</p>
-                <ul className="pricing-card__features">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="pricing-card__feature">
-                      <Check size={16} className="pricing-card__feature-icon" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+              <h3 className="pricing-card__name">{tier.name}</h3>
+              <div className="pricing-card__price">
+                {tier.price}
+                {tier.period && <span>{tier.period}</span>}
+              </div>
+              <p className="text-sm text-muted">{tier.description}</p>
+              <ul className="pricing-card__features">
+                {tier.features.map((feature) => (
+                  <li key={feature} className="pricing-card__feature">
+                    <Check size={16} className="pricing-card__feature-icon" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <div style={{ marginTop: 'auto' }}>
                 <Link to={tier.name === 'Enterprise' ? '/contact' : '/app'}>
                   <CyberButton
                     variant={tier.featured ? 'primary' : 'glass'}
@@ -115,14 +110,13 @@ export function PricingPage() {
                   </CyberButton>
                 </Link>
               </div>
-            </AnimatedCard>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="public-footer">
-        <p>© 2026 DRME. Built for the future of resource management.</p>
+        <p>2026 DRME / Built for the future of resource management.</p>
       </footer>
     </div>
   );

@@ -36,14 +36,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        height: '100vh',
-        background: 'var(--color-bg)',
-        color: 'var(--color-text)',
-      }}>
+      <div className="flex items-center justify-center" style={{ height: '100vh' }}>
         Loading...
       </div>
     );

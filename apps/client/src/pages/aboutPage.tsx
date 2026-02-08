@@ -1,15 +1,21 @@
 import { Link } from 'react-router-dom';
 import { CyberButton } from '../components/ui/cyberButton';
-import { AnimatedCard } from '../components/ui/animatedCard';
 import '../styles/pages.css';
+
+const stack = [
+  { label: 'Frontend', value: 'React + TypeScript + Vite' },
+  { label: 'Backend', value: 'NestJS + Prisma' },
+  { label: 'Database', value: 'PostgreSQL' },
+  { label: 'Auth', value: 'JWT + Refresh Tokens' },
+  { label: 'Infra', value: 'Docker + Docker Compose' },
+];
 
 export function AboutPage() {
   return (
     <div className="public-page">
-      {/* Navigation */}
       <nav className="public-nav">
         <Link to="/" className="public-nav__logo">
-          <span className="public-nav__logo-icon">◈</span>
+          <span className="public-nav__logo-icon">&#9670;</span>
           DRME
         </Link>
         <div className="public-nav__links">
@@ -23,49 +29,63 @@ export function AboutPage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="hero" style={{ minHeight: '50vh' }}>
+      <section className="hero" style={{ minHeight: '40vh' }}>
         <h1 className="hero__title">About DRME</h1>
         <p className="hero__subtitle">
           The Dynamic Resource Management Engine powering the next generation of enterprise applications.
         </p>
       </section>
 
-      {/* Content */}
-      <section className="page-section">
-        <div className="feature-grid" style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <AnimatedCard delay={0}>
-            <h3 className="feature-card__title">What is DRME?</h3>
-            <p className="feature-card__description">
-              DRME is a schema-driven platform for building dynamic, multi-tenant applications. 
-              Instead of hard-coding forms and data structures, you define them in schemas that 
-              DRME interprets at runtime to generate UIs, APIs, and database structures.
-            </p>
-          </AnimatedCard>
-
-          <AnimatedCard delay={100}>
-            <h3 className="feature-card__title">Technology Stack</h3>
-            <p className="feature-card__description">
-              Built with React and TypeScript on the frontend, NestJS on the backend, 
-              and Prisma with PostgreSQL for data persistence. Designed for performance, 
-              type safety, and developer experience.
-            </p>
-          </AnimatedCard>
-
-          <AnimatedCard delay={200}>
-            <h3 className="feature-card__title">Our Vision</h3>
-            <p className="feature-card__description">
-              We believe in empowering developers to build complex applications faster 
-              without sacrificing flexibility or security. DRME provides the foundation 
-              so you can focus on what makes your application unique.
-            </p>
-          </AnimatedCard>
+      {/* What is DRME */}
+      <section className="about-section">
+        <div className="about-section__label">01 / What</div>
+        <div className="about-section__content">
+          <h2 className="about-section__title">Schema-driven, not hard-coded</h2>
+          <p className="about-section__text">
+            DRME is a platform for building dynamic, multi-tenant applications.
+            Instead of hard-coding forms and data structures, you define them in
+            schemas that DRME interprets at runtime to generate UIs, APIs, and
+            database structures automatically.
+          </p>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Tech Stack */}
+      <section className="about-section">
+        <div className="about-section__label">02 / Stack</div>
+        <div className="about-section__content">
+          <h2 className="about-section__title">Technology</h2>
+          <div className="about-stack">
+            {stack.map((item) => (
+              <div key={item.label} className="about-stack__row">
+                <span className="about-stack__label">{item.label}</span>
+                <span className="about-stack__value">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Vision */}
+      <section className="about-section">
+        <div className="about-section__label">03 / Vision</div>
+        <div className="about-section__content">
+          <h2 className="about-section__title">Build more, configure less</h2>
+          <p className="about-section__text">
+            We believe in empowering developers to build complex applications
+            faster without sacrificing flexibility or security. DRME provides the
+            foundation so you can focus on what makes your application unique.
+          </p>
+          <div style={{ marginTop: 'var(--spacing-lg)' }}>
+            <Link to="/features">
+              <CyberButton variant="primary" size="md">See Features</CyberButton>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <footer className="public-footer">
-        <p>© 2026 DRME. Built for the future of resource management.</p>
+        <p>2026 DRME / Built for the future of resource management.</p>
       </footer>
     </div>
   );

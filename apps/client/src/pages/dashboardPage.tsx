@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Folder, Plus, FolderOpen, AlertCircle, Loader, Star, MessageSquare, 
-  Pin, Clock, Zap 
+import {
+  Folder, Plus, FolderOpen, AlertCircle, Loader, Star, MessageSquare,
+  Pin, Clock, Zap
 } from 'lucide-react';
 import { FluidShell } from '../components/layout/fluidShell';
 import { ProjectTabs, ProjectPanel, CommentsPanel } from '../components/workspace';
@@ -12,8 +12,8 @@ import { PriorityBadge, PriorityPicker } from '../components/ui/PriorityPicker';
 import { CommandPalette, useCommandPaletteCommands } from '../components/ui/CommandPalette';
 import { QuickActionsMenu, useProjectQuickActions } from '../components/ui/QuickActionsMenu';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { 
-  useWorkspace, useFavorites, useComments, useToast, usePins, useRecent, useActivity 
+import {
+  useWorkspace, useFavorites, useComments, useToast, usePins, useRecent, useActivity
 } from '../context';
 import { entityTypesApi, type EntityType } from '../api';
 import '../styles/workspace.css';
@@ -35,7 +35,6 @@ export function DashboardPage() {
   const [activeSection, setActiveSection] = useState<'form' | 'comments'>('form');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
-  // Fetch projects from backend
   const fetchProjects = async () => {
     try {
       setIsLoading(true);
@@ -89,9 +88,9 @@ export function DashboardPage() {
         displayName: data.displayName,
         description: data.description,
       });
-      
+
       await fetchProjects();
-      
+
       openTab({
         id: `project-${newProject.id}`,
         title: newProject.displayName,
@@ -127,7 +126,7 @@ export function DashboardPage() {
         isActive: data.isActive as boolean,
       });
       await fetchProjects();
-      
+
       addActivity({
         type: 'update',
         entityType: 'project',
@@ -142,32 +141,25 @@ export function DashboardPage() {
     }
   };
 
-  // Sort projects: pinned first, then favorites, then by name
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => {
       const aPinned = isPinned(a.id);
       const bPinned = isPinned(b.id);
       const aFav = isFavorite(a.id);
       const bFav = isFavorite(b.id);
-      
-      // Pinned first
+
       if (aPinned && !bPinned) return -1;
       if (!aPinned && bPinned) return 1;
-      
-      // Then favorites
       if (aFav && !bFav) return -1;
       if (!aFav && bFav) return 1;
-      
-      // Then alphabetical
+
       return a.displayName.localeCompare(b.displayName);
     });
   }, [projects, isPinned, isFavorite]);
 
-  // Separate pinned projects
   const pinnedProjects = sortedProjects.filter((p) => isPinned(p.id));
   const regularProjects = sortedProjects.filter((p) => !isPinned(p.id));
 
-  // Command palette commands
   const commands = useCommandPaletteCommands(
     projects,
     handleOpenProjectById,
@@ -175,7 +167,6 @@ export function DashboardPage() {
     navigate,
   );
 
-  // Keyboard shortcuts
   useKeyboardShortcuts([
     { key: 'k', ctrl: true, handler: () => setIsCommandPaletteOpen(true), description: 'Open command palette' },
     { key: 'n', ctrl: true, handler: () => setIsCreateModalOpen(true), description: 'Create new project' },
@@ -190,13 +181,12 @@ export function DashboardPage() {
 
   const activeTab = getActiveTab();
 
-  // Project item renderer
   const renderProjectItem = (project: EntityType, showPinBadge = false) => {
     const isActive = activeTabId === `project-${project.id}`;
     const isFav = isFavorite(project.id);
     const isPinnedProject = isPinned(project.id);
     const commentCount = getCommentCount(project.id);
-    
+
     const quickActions = useProjectQuickActions(project.id, {
       onPin: () => {
         togglePin(project.id);
@@ -208,106 +198,96 @@ export function DashboardPage() {
       isPinned: isPinnedProject,
       isStarred: isFav,
     });
-    
+
     return (
       <div
         key={project.id}
         className={`projects-sidebar__item ${isActive ? 'projects-sidebar__item--active' : ''} ${isPinnedProject ? 'projects-sidebar__item--pinned' : ''}`}
         onClick={() => handleProjectClick(project)}
       >
-        {/* Star button */}
         <button
           className={`projects-sidebar__star-btn ${isFav ? 'projects-sidebar__star-btn--active' : ''}`}
           onClick={(e) => { e.stopPropagation(); toggleFavorite(project.id); }}
         >
-          <Star size={14} fill={isFav ? '#eab308' : 'none'} />
+          <Star size={14} fill={isFav ? 'currentColor' : 'none'} />
         </button>
-        
-        {/* Folder icon */}
+
         <span className="projects-sidebar__item-icon">
-          {isActive ? <FolderOpen size={18} /> : <Folder size={18} />}
+          {isActive ? <FolderOpen size={16} /> : <Folder size={16} />}
         </span>
-        
-        {/* Project content */}
+
         <div className="projects-sidebar__item-content">
           <span className="projects-sidebar__item-name">{project.displayName}</span>
           <span className="projects-sidebar__item-meta">
             {project.tableName}
             {commentCount > 0 && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <span className="flex items-center gap-xs">
                 <MessageSquare size={10} />
                 {commentCount}
               </span>
             )}
           </span>
         </div>
-        
-        {/* Badges */}
+
         <div className="projects-sidebar__item-badges">
           {showPinBadge && isPinnedProject && (
-            <Pin size={12} style={{ color: 'var(--color-accent)', transform: 'rotate(45deg)' }} />
+            <Pin size={12} className="text-accent" />
           )}
           <PriorityBadge projectId={project.id} />
         </div>
-        
-        {/* Quick actions menu */}
+
         <QuickActionsMenu actions={quickActions} />
       </div>
     );
   };
 
-  // Sidebar content
   const sidebarContent = (
     <div className="projects-sidebar">
-      {/* Pinned Section */}
       {pinnedProjects.length > 0 && (
         <div className="projects-sidebar__section">
           <div className="projects-sidebar__title">
-            <Pin size={12} style={{ transform: 'rotate(45deg)' }} />
+            <Pin size={12} />
             Pinned
           </div>
           {pinnedProjects.map((p) => renderProjectItem(p, true))}
         </div>
       )}
-      
+
       {pinnedProjects.length > 0 && <div className="projects-sidebar__divider" />}
-      
-      {/* All Projects Section */}
+
       <div className="projects-sidebar__section">
         <div className="projects-sidebar__title">
           <Folder size={12} />
           Projects
         </div>
-        
+
         {isLoading && (
           <div className="projects-sidebar__loading">
-            <Loader size={20} className="animate-spin" />
+            <Loader size={18} className="animate-spin" />
             <span>Loading...</span>
           </div>
         )}
-        
+
         {error && !isLoading && (
           <div className="projects-sidebar__error">
-            <AlertCircle size={16} />
+            <AlertCircle size={14} />
             {error}
           </div>
         )}
-        
+
         {!isLoading && regularProjects.map((p) => renderProjectItem(p))}
       </div>
-      
-      {/* New Project Button */}
-      <CyberButton 
-        variant="ghost" 
-        size="sm" 
+
+      <CyberButton
+        variant="ghost"
+        size="sm"
         className="projects-sidebar__new-btn"
         onClick={() => setIsCreateModalOpen(true)}
       >
-        <Plus size={16} style={{ marginRight: 'var(--spacing-xs)' }} />
+        <Plus size={14} />
         New Project
       </CyberButton>
 
-      {/* Keyboard Hints */}
       <div className="projects-sidebar__hints">
         <div className="projects-sidebar__hint-row">
           <span>Search</span>
@@ -329,82 +309,46 @@ export function DashboardPage() {
     <>
       <FluidShell sidebarContent={sidebarContent}>
         <ProjectTabs />
-        
-        <div style={{ flex: 1, overflow: 'auto' }}>
+
+        <div className="flex-col" style={{ flex: 1, overflow: 'auto' }}>
           {activeTab && activeTab.data ? (
-            <div style={{ padding: 'var(--spacing-lg)' }}>
+            <div className="project-panel">
               {/* Section Tabs */}
-              <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
+              <div className="section-tabs">
                 <button
                   onClick={() => setActiveSection('form')}
-                  style={{
-                    padding: 'var(--spacing-sm) var(--spacing-lg)',
-                    background: activeSection === 'form' ? 'var(--glass-bg-active)' : 'transparent',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: 'var(--radius-md)',
-                    color: activeSection === 'form' ? 'var(--color-text-bright)' : 'var(--color-text-muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--spacing-xs)',
-                  }}
+                  className={`section-tab ${activeSection === 'form' ? 'section-tab--active' : ''}`}
                 >
-                  <Folder size={16} />
+                  <Folder size={14} />
                   Details
                 </button>
                 <button
                   onClick={() => setActiveSection('comments')}
-                  style={{
-                    padding: 'var(--spacing-sm) var(--spacing-lg)',
-                    background: activeSection === 'comments' ? 'var(--glass-bg-active)' : 'transparent',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: 'var(--radius-md)',
-                    color: activeSection === 'comments' ? 'var(--color-text-bright)' : 'var(--color-text-muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--spacing-xs)',
-                  }}
+                  className={`section-tab ${activeSection === 'comments' ? 'section-tab--active' : ''}`}
                 >
-                  <MessageSquare size={16} />
+                  <MessageSquare size={14} />
                   Comments
                   {getCommentCount(activeTab.data.id) > 0 && (
-                    <span style={{
-                      padding: '2px 6px',
-                      background: 'var(--color-accent)',
-                      borderRadius: 'var(--radius-full)',
-                      fontSize: '0.75rem',
-                      color: 'white',
-                    }}>
+                    <span className="section-tab__badge">
                       {getCommentCount(activeTab.data.id)}
                     </span>
                   )}
                 </button>
 
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--spacing-sm)' }}>
-                  {/* Pin toggle */}
+                <div className="content-toolbar">
                   {activeTab.data && (
                     <button
                       onClick={() => {
                         togglePin(activeTab.data!.id);
                         toast.info(isPinned(activeTab.data!.id) ? 'Unpinned' : 'Pinned to top', activeTab.data!.displayName);
                       }}
-                      style={{
-                        padding: 'var(--spacing-sm)',
-                        background: isPinned(activeTab.data.id) ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                        border: `1px solid ${isPinned(activeTab.data.id) ? 'var(--color-accent)' : 'var(--glass-border)'}`,
-                        borderRadius: 'var(--radius-md)',
-                        color: isPinned(activeTab.data.id) ? 'var(--color-accent)' : 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
+                      className={`toolbar-btn ${isPinned(activeTab.data.id) ? 'toolbar-btn--active' : ''}`}
                       title={isPinned(activeTab.data.id) ? 'Unpin' : 'Pin to top'}
                     >
-                      <Pin size={16} style={{ transform: 'rotate(45deg)' }} />
+                      <Pin size={14} />
                     </button>
                   )}
-                  
+
                   <PriorityPicker projectId={activeTab.data.id} />
                 </div>
               </div>
@@ -418,21 +362,21 @@ export function DashboardPage() {
           ) : (
             <div className="workspace-empty">
               <div className="workspace-empty__icon">
-                <Zap size={64} style={{ color: 'var(--color-accent)' }} />
+                <Zap size={48} />
               </div>
               <h3 className="workspace-empty__title">Ready to Build</h3>
               <p className="workspace-empty__text">
                 Select a project from the sidebar, or press{' '}
-                <kbd style={{ padding: '2px 6px', background: 'var(--glass-bg)', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>Ctrl+K</kbd>{' '}
+                <kbd className="kbd">Ctrl+K</kbd>{' '}
                 to search everything.
               </p>
-              <div style={{ display: 'flex', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-lg)' }}>
+              <div className="flex gap-md" style={{ marginTop: 'var(--spacing-lg)' }}>
                 <CyberButton variant="primary" onClick={() => setIsCreateModalOpen(true)}>
-                  <Plus size={18} style={{ marginRight: 'var(--spacing-xs)' }} />
+                  <Plus size={16} />
                   Create Project
                 </CyberButton>
-                <CyberButton variant="ghost" onClick={() => setIsCommandPaletteOpen(true)}>
-                  <Clock size={18} style={{ marginRight: 'var(--spacing-xs)' }} />
+                <CyberButton variant="glass" onClick={() => setIsCommandPaletteOpen(true)}>
+                  <Clock size={16} />
                   Quick Search
                 </CyberButton>
               </div>

@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Code, Database, Shield, Zap, Layers, Settings } from 'lucide-react';
 import { CyberButton } from '../components/ui/cyberButton';
-import { AnimatedCard } from '../components/ui/animatedCard';
 import '../styles/pages.css';
 
 export function FeaturesPage() {
@@ -40,10 +39,9 @@ export function FeaturesPage() {
 
   return (
     <div className="public-page">
-      {/* Navigation */}
       <nav className="public-nav">
         <Link to="/" className="public-nav__logo">
-          <span className="public-nav__logo-icon">◈</span>
+          <span className="public-nav__logo-icon">&#9670;</span>
           DRME
         </Link>
         <div className="public-nav__links">
@@ -57,38 +55,33 @@ export function FeaturesPage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="hero" style={{ minHeight: '50vh' }}>
+      <section className="hero" style={{ minHeight: '40vh' }}>
         <h1 className="hero__title">Features</h1>
         <p className="hero__subtitle">
           Everything you need to build powerful, enterprise-grade applications.
         </p>
       </section>
 
-      {/* Features Grid */}
       <section className="page-section">
-        <div className="feature-grid">
-          {features.map((feature, index) => {
+        <div className="feature-grid feature-grid--3col">
+          {features.map((feature) => {
             const Icon = feature.icon;
             return (
-              <AnimatedCard key={feature.title} delay={index * 100}>
-                <div className="feature-card">
-                  <div className="feature-card__icon">
-                    <Icon size={24} />
-                  </div>
-                  <h3 className="feature-card__title">{feature.title}</h3>
-                  <p className="feature-card__description">{feature.description}</p>
+              <div key={feature.title} className="feature-card">
+                <div className="feature-card__icon">
+                  <Icon size={22} />
                 </div>
-              </AnimatedCard>
+                <h3 className="feature-card__title">{feature.title}</h3>
+                <p className="feature-card__description">{feature.description}</p>
+              </div>
             );
           })}
         </div>
       </section>
 
-      {/* CTA */}
       <section className="page-section" style={{ textAlign: 'center' }}>
         <h2>Ready to get started?</h2>
-        <p style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--spacing-lg)' }}>
+        <p className="text-muted mb-lg">
           Try DRME today and experience the future of resource management.
         </p>
         <Link to="/app">
@@ -96,9 +89,8 @@ export function FeaturesPage() {
         </Link>
       </section>
 
-      {/* Footer */}
       <footer className="public-footer">
-        <p>© 2026 DRME. Built for the future of resource management.</p>
+        <p>2026 DRME / Built for the future of resource management.</p>
       </footer>
     </div>
   );
